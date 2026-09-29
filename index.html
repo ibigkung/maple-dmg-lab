@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0a0d19">
+<title>MapleDMG · GMS Reboot Damage Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0a0d19; --ink-2:#0e1222; --panel:#121729; --panel-2:#171e35; --panel-3:#1f2846;
+  --line:#242c48; --line-2:#323c60;
+  --tx:#e9ecf7; --tx-2:#b6bed6; --mute:#8590ad;
+  --maple:#ff8a3d; --maple-2:#ff6a2b; --gold:#ffd166; --sky:#6ea8ff; --mint:#4fd6a1; --rose:#ff6b81; --violet:#a58bff;
+  --f:'IBM Plex Sans Thai','IBM Plex Sans','Noto Sans Thai',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --fd:'Fredoka','IBM Plex Sans Thai',system-ui,sans-serif;
+  --nav-h:64px; --rail-w:88px;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth;scroll-padding-top:env(safe-area-inset-top,0px);background:var(--ink)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100%;background:var(--ink);color:var(--tx);font:400 15px/1.55 var(--f);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(900px 520px at 88% -8%,rgba(255,138,61,.10),transparent 60%),radial-gradient(700px 520px at -8% 108%,rgba(110,168,255,.08),transparent 60%)}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--maple);outline-offset:2px}
+::selection{background:rgba(255,138,61,.35)}
+.ic{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---------- shell ---------- */
+.app{min-height:100vh}
+.rail{display:none}
+.main{min-width:0}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;
+  background:rgba(10,13,25,.86);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.ttl{display:flex;align-items:center;gap:11px;min-width:0}
+.mark{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex:none;background:linear-gradient(145deg,#ffb45c,#ff6a2b);box-shadow:0 6px 18px -6px rgba(255,106,43,.7), inset 0 1px 0 rgba(255,255,255,.35)}
+.mark svg{width:20px;height:20px;fill:#2a1204;stroke:none}
+.ttl h1{margin:0;font-size:18px;line-height:1.2;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ttl p{margin:1px 0 0;color:var(--mute);font-size:12.5px;line-height:1.3;display:none}
+.tools{display:flex;align-items:center;gap:8px;flex:none}
+.content{max-width:1280px;margin:0 auto;padding:6px 14px calc(var(--nav-h) + 96px)}
+.view{display:none}
+.view.active{display:block}
+
+.rail .brand{margin-bottom:14px}
+.navb{position:relative;width:68px;padding:10px 4px 8px;border:0;border-radius:14px;background:transparent;color:var(--mute);display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11.5px;line-height:1.2;font-weight:500;cursor:pointer;text-align:center;transition:background .15s,color .15s}
+.navb:hover{background:var(--panel-2);color:var(--tx)}
+.navb.active{background:var(--panel-2);color:var(--maple)}
+.navb.active::before{content:"";position:absolute;left:-10px;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--maple)}
+
+.bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:repeat(4,1fr);
+  padding:0 6px env(safe-area-inset-bottom,0px);background:rgba(12,16,30,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line)}
+.bn{height:var(--nav-h);border:0;background:transparent;color:var(--mute);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11.5px;font-weight:500;cursor:pointer;position:relative}
+.bn.active{color:var(--maple)}
+.bn.active::before{content:"";position:absolute;top:0;left:28%;right:28%;height:2px;border-radius:0 0 3px 3px;background:var(--maple)}
+
+@media(min-width:640px){
+  .topbar{padding:12px 24px}
+  .content{padding:10px 24px calc(var(--nav-h) + 96px)}
+  .ttl p{display:block}
+  .ttl h1{font-size:20px}
+}
+@media(min-width:1100px){
+  .app{display:grid;grid-template-columns:var(--rail-w) minmax(0,1fr)}
+  .rail{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 0;position:sticky;top:env(safe-area-inset-top,0px);height:100vh;align-self:start;border-right:1px solid var(--line);background:linear-gradient(180deg,rgba(18,23,41,.85),rgba(10,13,25,.85))}
+  .bottomnav{display:none}
+  .topbar{padding:14px 36px}
+  .topbar .mark-sm{display:none}
+  .ttl h1{font-size:24px}
+  .content{padding:14px 36px 56px}
+}
+
+/* ---------- buttons & controls ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--tx);font-weight:500;font-size:14px;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,color .15s}
+.btn:hover{background:var(--panel-3);border-color:#40507c}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(180deg,var(--maple),var(--maple-2));border-color:transparent;color:#1d0d02;font-weight:600}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent}
+.btn.ghost:hover{background:var(--panel-2)}
+.btn.sm{height:32px;padding:0 10px;font-size:13px;border-radius:9px}
+.btn.icon{width:38px;padding:0}
+.btn.icon.sm{width:32px}
+.btn.danger:hover{color:var(--rose);border-color:rgba(255,107,129,.5)}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--mute);padding:6px 12px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;min-height:30px;transition:background .15s,color .15s}
+.seg button[aria-pressed="true"]{background:var(--panel-3);color:var(--tx);box-shadow:inset 0 0 0 1px var(--line-2)}
+.seg.wide{display:flex;width:100%}
+.seg.wide button{flex:1}
+@media(max-width:639px){ .tools .bl{display:none} .tools .btn{width:38px;padding:0} }
+
+.group{padding:20px 0;border-top:1px solid var(--line)}
+.group:first-child{border-top:0;padding-top:12px}
+.gh{margin:0 0 14px;font-size:15px;line-height:1.3;font-weight:600;display:flex;align-items:center;gap:9px}
+.gh::before{content:"";width:3px;height:15px;border-radius:2px;background:var(--maple);flex:none}
+.gh .tag{margin-left:auto;font-weight:500;font-size:12.5px;color:var(--mute)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:14px 12px}
+.fgrid.c3,.fgrid.c4{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(min-width:520px){.fgrid.c3{grid-template-columns:repeat(3,minmax(0,1fr))}.fgrid.c4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.span2{grid-column:1/-1}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lbl{font-size:13px;color:var(--tx-2);font-weight:500;display:flex;justify-content:space-between;gap:8px}
+.lbl .echo{color:var(--gold);font-weight:600}
+.ctl{display:flex;align-items:center;gap:8px;height:42px;padding:0 12px;background:var(--ink-2);border:1px solid var(--line-2);border-radius:10px;transition:border-color .15s,box-shadow .15s}
+.ctl:focus-within{border-color:var(--maple);box-shadow:0 0 0 3px rgba(255,138,61,.18)}
+.ctl input,.ctl select{flex:1;min-width:0;width:100%;height:100%;padding:0;background:transparent;border:0;outline:0;color:var(--tx);font:500 15px var(--f);font-variant-numeric:tabular-nums}
+.ctl select{appearance:none;-webkit-appearance:none;cursor:pointer;text-overflow:ellipsis}
+.ctl select option{background:#151b31;color:var(--tx)}
+.ctl.sel::after{content:"";width:8px;height:8px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:rotate(45deg) translateY(-2px);flex:none;pointer-events:none}
+.ctl em{font-style:normal;color:var(--mute);font-size:13px;flex:none}
+input[type=number]{-moz-appearance:textfield;appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.hint{font-size:12px;line-height:1.45;color:var(--mute)}
+.sublbl{margin:16px 0 8px;font-size:13px;font-weight:600;color:var(--tx-2)}
+.sublbl+.hint{margin:-4px 0 8px;display:block}
+.lrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.lrow .ctl{flex:1}
+.lfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px}
+.sum{font-weight:600;color:var(--gold);font-size:14px}
+.sum small{color:var(--mute);font-weight:500;margin-right:6px;font-size:12.5px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1px solid var(--line-2);background:var(--panel);color:var(--tx-2);height:28px;padding:0 11px;border-radius:99px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.chip:hover{border-color:var(--maple);color:var(--tx)}
+.chip.on{background:rgba(255,138,61,.16);border-color:var(--maple);color:var(--maple)}
+details.adv{margin-top:14px;border:1px dashed var(--line-2);border-radius:12px;padding:0 14px}
+details.adv summary{list-style:none;cursor:pointer;padding:11px 0;font-size:13.5px;font-weight:500;color:var(--tx-2);display:flex;align-items:center;justify-content:space-between}
+details.adv summary::-webkit-details-marker{display:none}
+details.adv summary::after{content:"";width:7px;height:7px;border-right:2px solid var(--mute);border-bottom:2px solid var(--mute);transform:rotate(45deg);transition:transform .2s}
+details.adv[open] summary::after{transform:rotate(-135deg)}
+details.adv .fgrid{padding:2px 0 16px}
+.sw{position:relative;display:inline-block;width:40px;height:24px;flex:none}
+.sw input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;z-index:1}
+.sw i{position:absolute;inset:0;border-radius:99px;background:var(--panel-3);border:1px solid var(--line-2);transition:background .2s}
+.sw i::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--mute);transition:transform .2s,background .2s}
+.sw input:checked+i{background:rgba(255,138,61,.25);border-color:var(--maple)}
+.sw input:checked+i::after{transform:translateX(16px);background:var(--maple)}
+.sw input:focus-visible+i{outline:2px solid var(--maple);outline-offset:2px}
+
+/* ---------- layout ---------- */
+.split{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+@media(min-width:1100px){
+  .split{grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);gap:44px;align-items:start}
+  .stage-col{position:sticky;top:calc(env(safe-area-inset-top,0px) + 84px);max-height:calc(100vh - 100px);overflow:auto;padding:4px 6px 20px 2px;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+}
+
+/* ---------- result stage ---------- */
+.stage{position:relative;padding:22px 20px 8px;border-radius:22px;border:1px solid var(--line-2);background:linear-gradient(180deg,rgba(255,138,61,.08),rgba(18,23,41,.92) 42%);box-shadow:0 24px 50px -30px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.05)}
+.hero{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.hero-l{min-width:0}
+.hero-lbl{display:block;font-size:13px;color:var(--tx-2);font-weight:500;margin-bottom:6px}
+.dmg{font-family:var(--fd);font-weight:700;font-size:clamp(42px,10vw,66px);line-height:1;letter-spacing:.01em;
+  background:linear-gradient(180deg,#fff4c9 0%,#ffc45a 46%,#ff7a2b 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 3px 0 rgba(96,32,6,.95)) drop-shadow(0 10px 20px rgba(255,122,43,.28))}
+.dmg.sm{font-size:clamp(30px,7vw,40px)}
+.full{margin-top:8px;font-size:12.5px;color:var(--mute)}
+.hero-r{text-align:right}
+.hero-r span{display:block;font-size:12.5px;color:var(--tx-2)}
+.hero-r b{font-family:var(--fd);font-size:24px;font-weight:600;color:var(--tx)}
+.trk{margin-top:18px}
+.trk-h{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--tx-2);margin-bottom:8px}
+.trk-h .v{color:var(--tx);font-weight:600;text-align:right}
+.trk-b{position:relative;height:12px;border-radius:99px;background:var(--ink-2);border:1px solid var(--line)}
+.trk-b i{position:absolute;top:-1px;bottom:-1px;border-radius:99px}
+.i-n{background:linear-gradient(90deg,#ff9a55,#ff6a2b)}
+.i-c{background:linear-gradient(90deg,#ffe08a,#ffb830)}
+.trk-b u{position:absolute;top:-6px;bottom:-6px;width:3px;margin-left:-1.5px;border-radius:3px;background:#fff;box-shadow:0 0 0 2px rgba(10,13,25,.95)}
+.kv{margin:22px 0 0}
+.kv div{display:flex;justify-content:space-between;gap:14px;padding:10px 0;border-top:1px solid var(--line)}
+.kv dt{color:var(--tx-2);font-size:14px}
+.kv dd{margin:0;font-weight:600;text-align:right}
+.kv dd small{display:block;font-weight:400;color:var(--mute);font-size:12px}
+.warn{margin:6px 0 14px;padding:10px 12px;border-radius:11px;background:rgba(255,107,129,.1);border:1px solid rgba(255,107,129,.35);color:#ffb3bf;font-size:13.5px}
+.brow{padding:9px 0}
+.brow-h{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+.brow-h span:first-child{color:var(--tx-2)}
+.brow-h b{font-weight:600;text-align:right}
+.brow-h b small{color:var(--mute);font-weight:500;margin-left:6px}
+.bar{height:6px;border-radius:99px;background:var(--ink-2);margin-top:7px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--maple),var(--gold))}
+.bar.neg i{background:var(--rose)}
+.bar.sky i{background:var(--sky)}
+
+/* ---------- dps items ---------- */
+.item{position:relative;padding:12px 12px 14px 17px;border:1px solid var(--line);border-radius:14px;background:var(--panel);margin-bottom:10px}
+.item::before{content:"";position:absolute;left:0;top:11px;bottom:11px;width:3px;border-radius:3px;background:var(--c,var(--maple))}
+.item.off{opacity:.55}
+.item-h{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.nm{flex:1;min-width:0;height:36px;padding:0 11px;background:var(--ink-2);border:1px solid var(--line-2);border-radius:9px;color:var(--tx);font:600 14px var(--f);outline:0}
+.nm:focus{border-color:var(--maple);box-shadow:0 0 0 3px rgba(255,138,61,.18)}
+.item .ctl{height:38px}
+.item .lbl{font-size:12px}
+.empty{padding:28px 16px;text-align:center;color:var(--mute);border:1px dashed var(--line-2);border-radius:14px}
+.legend{display:flex;align-items:center;gap:9px;min-width:0}
+.dot{width:10px;height:10px;border-radius:3px;background:var(--c);flex:none}
+.chart{display:block;width:100%;height:auto;overflow:visible}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.chart .ax{fill:var(--mute);font:11px var(--f)}
+.chart .kl{stroke:var(--mint);stroke-width:1.5;stroke-dasharray:4 4}
+.chart .kt{fill:var(--mint);font:600 11px var(--f)}
+.subh{margin:24px 0 8px;font-size:14px;font-weight:600;display:flex;justify-content:space-between;gap:10px}
+.subh span:last-child{color:var(--mute);font-weight:500;font-size:12.5px}
+.share{padding:8px 0}
+.share .brow-h span:first-child{color:var(--tx);display:flex;align-items:center;gap:9px}
+.share .bar i{background:var(--c)}
+
+/* ---------- compare ---------- */
+.verdict{display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:18px 20px;border-radius:20px;border:1px solid var(--line-2);background:linear-gradient(180deg,rgba(79,214,161,.09),rgba(18,23,41,.92))}
+.verdict.dn{background:linear-gradient(180deg,rgba(255,107,129,.1),rgba(18,23,41,.92))}
+.verdict.eq{background:var(--panel)}
+.verdict .vl{font-size:14px;color:var(--tx-2)}
+.verdict .vn{font-family:var(--fd);font-weight:700;font-size:clamp(34px,8vw,48px);line-height:1;color:var(--mint);filter:drop-shadow(0 3px 0 rgba(6,50,34,.9))}
+.verdict.dn .vn{color:var(--rose);filter:drop-shadow(0 3px 0 rgba(70,10,20,.9))}
+.verdict.eq .vn{color:var(--tx-2);filter:none}
+.tbl{width:100%;border-collapse:collapse;margin-top:16px;font-size:14px}
+.tbl th{font-weight:500;color:var(--mute);font-size:12.5px;text-align:right;padding:6px 0 8px}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl td{padding:11px 0;border-top:1px solid var(--line);text-align:right;font-weight:600}
+.tbl td:first-child{font-weight:400;color:var(--tx-2)}
+.tbl td+td,.tbl th+th{padding-left:10px}
+.up{color:var(--mint)} .dn{color:var(--rose)} .eq{color:var(--mute)}
+.erow{padding:12px 0;border-top:1px solid var(--line)}
+.erow:first-child{border-top:0}
+.erow-h{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.erow-n{display:flex;align-items:center;gap:8px;min-width:0;font-size:14px}
+.badge{font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:99px;background:rgba(79,214,161,.16);color:var(--mint);white-space:nowrap}
+.erow .ctl{width:118px;height:36px;flex:none}
+.erow-b{display:flex;align-items:center;gap:12px;margin-top:9px}
+.erow-b .bar{flex:1;margin:0}
+.erow-b b{min-width:72px;text-align:right;font-size:14px}
+
+/* ---------- guide ---------- */
+.prose{max-width:780px}
+.prose h2{margin:30px 0 10px;font-size:17px;font-weight:600}
+.prose h2:first-child{margin-top:16px}
+.prose p,.prose li{color:var(--tx-2)}
+.prose ol,.prose ul{padding-left:22px;margin:8px 0}
+.prose li{margin:7px 0}
+.code{margin:12px 0;padding:16px 18px;background:var(--ink-2);border:1px solid var(--line-2);border-radius:14px;font:500 13px/1.85 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#ffd9b8;overflow-x:auto;white-space:pre}
+.gloss{display:grid;grid-template-columns:minmax(0,1fr);margin:8px 0}
+.gloss div{padding:11px 0;border-top:1px solid var(--line)}
+.gloss dt{font-weight:600;color:var(--tx)}
+.gloss dd{margin:3px 0 0;color:var(--tx-2);font-size:14px}
+.note{margin-top:22px;padding:14px 16px;border-radius:14px;border:1px solid rgba(255,209,102,.3);background:rgba(255,209,102,.07);color:#f1dfae;font-size:14px}
+
+/* ---------- overlays ---------- */
+.fab{position:fixed;right:14px;bottom:calc(var(--nav-h) + 12px + env(safe-area-inset-bottom,0px));z-index:30;display:none;align-items:center;gap:10px;height:46px;padding:0 16px;border:0;border-radius:99px;cursor:pointer;
+  background:linear-gradient(180deg,#ff9a4d,#ff6a2b);color:#1d0d02;font-weight:600;font-size:14px;box-shadow:0 12px 28px -8px rgba(255,106,43,.65)}
+.fab b{font-family:var(--fd);font-size:18px;font-weight:700}
+.fab.show{display:flex}
+@media(min-width:1100px){.fab.show{display:none}}
+.modal{position:fixed;inset:0;z-index:100;display:none;align-items:flex-end;justify-content:center;background:rgba(4,6,12,.7);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.modal.open{display:flex}
+.dlg{width:min(580px,100%);max-height:90vh;overflow:auto;background:var(--panel);border:1px solid var(--line-2);border-radius:22px 22px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));animation:rise .22s ease-out}
+@keyframes rise{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+@media(min-width:640px){.modal{align-items:center}.dlg{border-radius:22px;padding-bottom:20px}}
+.dlg-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.dlg-h h2{margin:0;font-size:18px;font-weight:600}
+.saverow{display:flex;gap:8px;margin:14px 0 4px}
+.saverow .ctl{flex:1}
+.blist{margin:12px 0 0}
+.bitem{display:flex;align-items:center;gap:8px;padding:11px 0;border-top:1px solid var(--line)}
+.bitem .bn2{flex:1;min-width:0}
+.bitem .bn2 b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bitem .bn2 small{color:var(--mute);font-size:12px}
+textarea.json{width:100%;min-height:120px;resize:vertical;margin-top:10px;padding:12px;background:var(--ink-2);border:1px solid var(--line-2);border-radius:12px;color:var(--tx-2);font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;outline:0}
+textarea.json:focus{border-color:var(--maple)}
+.row-end{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:calc(var(--nav-h) + 20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);z-index:120;display:flex;align-items:center;gap:14px;max-width:calc(100vw - 28px);padding:11px 16px;background:var(--panel-3);border:1px solid var(--line-2);border-radius:13px;box-shadow:0 16px 40px -12px rgba(0,0,0,.8);font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{border:0;background:transparent;color:var(--maple);font-weight:600;cursor:pointer;padding:0}
+@media(min-width:1100px){.toast{bottom:28px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-calc" viewBox="0 0 24 24"><path d="M12 3l2.3 5.4 5.8.5-4.4 3.8 1.4 5.7L12 15.3 6.9 18.4l1.4-5.7L3.9 8.9l5.8-.5z"/></symbol>
+    <symbol id="i-dps" viewBox="0 0 24 24"><path d="M4 4v16h16"/><path d="M8 15l3.2-4.2 3 2.4L19 7"/></symbol>
+    <symbol id="i-cmp" viewBox="0 0 24 24"><rect x="4.5" y="11" width="5" height="8.5" rx="1.2"/><rect x="14.5" y="4.5" width="5" height="15" rx="1.2"/></symbol>
+    <symbol id="i-guide" viewBox="0 0 24 24"><path d="M6 4h9.5A2.5 2.5 0 0118 6.5V20H8.5A2.5 2.5 0 016 17.5z"/><path d="M6 17.5A2.5 2.5 0 018.5 15H18"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M7 4h10v16l-5-3.6L7 20z"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4.5 12a7.5 7.5 0 102.4-5.5"/><path d="M4.5 4.5v4h4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 14l6-6 6 6"/></symbol>
+    <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 10l6 6 6-6"/></symbol>
+  </defs>
+</svg>
+
+<div class="app">
+  <aside class="rail" aria-label="Navigation">
+    <div class="mark brand" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.6 6.1 6.6.6-5 4.3 1.5 6.5L12 16.7 6.3 20l1.5-6.5-5-4.3 6.6-.6z"/></svg></div>
+    <button class="navb" data-view="calc"><svg class="ic"><use href="#i-calc"/></svg><span data-i18n="nav.calc"></span></button>
+    <button class="navb" data-view="dps"><svg class="ic"><use href="#i-dps"/></svg><span data-i18n="nav.dps"></span></button>
+    <button class="navb" data-view="cmp"><svg class="ic"><use href="#i-cmp"/></svg><span data-i18n="nav.cmp"></span></button>
+    <button class="navb" data-view="guide"><svg class="ic"><use href="#i-guide"/></svg><span data-i18n="nav.guide"></span></button>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="ttl">
+        <div class="mark mark-sm" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2.5l2.6 6.1 6.6.6-5 4.3 1.5 6.5L12 16.7 6.3 20l1.5-6.5-5-4.3 6.6-.6z"/></svg></div>
+        <div style="min-width:0"><h1 id="pageTitle"></h1><p id="pageSub"></p></div>
+      </div>
+      <div class="tools">
+        <button class="btn" id="btnBuilds" data-i18n-aria="tb.builds"><svg class="ic"><use href="#i-save"/></svg><span class="bl" data-i18n="tb.builds"></span></button>
+        <button class="btn" id="btnReset" data-i18n-aria="tb.reset"><svg class="ic"><use href="#i-reset"/></svg><span class="bl" data-i18n="tb.reset"></span></button>
+        <div class="seg" id="langSeg" role="group" aria-label="Language">
+          <button data-lang="th" aria-pressed="false">TH</button>
+          <button data-lang="en" aria-pressed="false">EN</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- ========== CALCULATOR ========== -->
+      <section class="view" id="view-calc">
+        <div class="split">
+          <div class="form" id="formCalc"></div>
+          <div class="stage-col">
+            <div class="stage" id="stage"></div>
+            <div class="group" style="border-top:0"><h2 class="gh" data-i18n="r.breakdown"></h2><div id="break"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== DPS ========== -->
+      <section class="view" id="view-dps">
+        <div class="split">
+          <div class="form">
+            <div class="group">
+              <h2 class="gh" data-i18n="sec.sim"></h2>
+              <div class="fgrid" id="simForm"></div>
+              <p class="hint" style="margin:12px 0 0" data-i18n="d.usesBuild"></p>
+            </div>
+            <div class="group">
+              <h2 class="gh"><span data-i18n="sec.skills"></span></h2>
+              <p class="hint" style="margin:-6px 0 12px" data-i18n="d.skillsHint"></p>
+              <div id="skillList"></div>
+              <button class="btn sm" id="btnAddSkill"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="b.addSkill"></span></button>
+              <p class="hint" style="margin:12px 0 0" data-i18n="d.example"></p>
+            </div>
+            <div class="group">
+              <h2 class="gh"><span data-i18n="sec.buffs"></span></h2>
+              <p class="hint" style="margin:-6px 0 12px" data-i18n="d.buffsHint"></p>
+              <div id="buffList"></div>
+              <button class="btn sm" id="btnAddBuff"><svg class="ic"><use href="#i-plus"/></svg><span data-i18n="b.addBuff"></span></button>
+            </div>
+          </div>
+          <div class="stage-col"><div class="stage" id="dpsOut"></div></div>
+        </div>
+      </section>
+
+      <!-- ========== COMPARE ========== -->
+      <section class="view" id="view-cmp">
+        <div class="split">
+          <div class="form">
+            <div class="group">
+              <h2 class="gh" data-i18n="sec.delta"></h2>
+              <p class="hint" style="margin:-6px 0 14px" data-i18n="c.hint"></p>
+              <div class="fgrid" id="cmpForm"></div>
+              <div class="row-end" style="justify-content:flex-start"><button class="btn sm ghost" id="btnClearCmp"><svg class="ic"><use href="#i-reset"/></svg><span data-i18n="b.clear"></span></button></div>
+            </div>
+          </div>
+          <div class="stage-col"><div id="cmpOut"></div></div>
+        </div>
+        <div class="group" style="margin-top:14px">
+          <h2 class="gh" data-i18n="sec.eff"></h2>
+          <p class="hint" style="margin:-6px 0 8px;max-width:680px" data-i18n="e.hint"></p>
+          <div id="effList" style="max-width:820px"></div>
+        </div>
+      </section>
+
+      <!-- ========== GUIDE ========== -->
+      <section class="view" id="view-guide"><div class="prose" id="guide"></div></section>
+    </main>
+  </div>
+</div>
+
+<nav class="bottomnav" aria-label="Navigation">
+  <button class="bn" data-view="calc"><svg class="ic"><use href="#i-calc"/></svg><span data-i18n="nav.calc.s"></span></button>
+  <button class="bn" data-view="dps"><svg class="ic"><use href="#i-dps"/></svg><span data-i18n="nav.dps.s"></span></button>
+  <button class="bn" data-view="cmp"><svg class="ic"><use href="#i-cmp"/></svg><span data-i18n="nav.cmp.s"></span></button>
+  <button class="bn" data-view="guide"><svg class="ic"><use href="#i-guide"/></svg><span data-i18n="nav.guide.s"></span></button>
+</nav>
+
+<button class="fab" id="fab" aria-live="polite"><span data-i18n="r.avgShort"></span><b id="fabVal">0</b></button>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="dlg">
+    <div class="dlg-h"><h2 id="mTitle" data-i18n="m.builds"></h2><button class="btn icon ghost" id="mClose" data-i18n-aria="m.close"><svg class="ic"><use href="#i-x"/></svg></button></div>
+    <div class="saverow">
+      <label class="ctl"><input type="text" id="mName" maxlength="40" data-i18n-ph="m.name" autocomplete="off"></label>
+      <button class="btn primary" id="mSave" data-i18n="m.save"></button>
+    </div>
+    <div class="blist" id="bList"></div>
+    <h2 class="gh" style="margin-top:26px" data-i18n="m.backup"></h2>
+    <p class="hint" style="margin:-6px 0 0" data-i18n="m.backupHint"></p>
+    <textarea class="json" id="mJson" spellcheck="false" aria-label="JSON"></textarea>
+    <div class="row-end"><button class="btn" id="mCopy" data-i18n="m.copy"></button><button class="btn" id="mImport" data-i18n="m.import"></button></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastAct" hidden></button></div>
+<script>
+(function(){
+'use strict';
+
+/* =====================================================================
+   1. Localisation
+   ===================================================================== */
+var I18N = {
+en: {
+"nav.calc":"Hit calculator","nav.dps":"DPS simulation","nav.cmp":"Compare","nav.guide":"Guide",
+"nav.calc.s":"Calculate","nav.dps.s":"DPS","nav.cmp.s":"Compare","nav.guide.s":"Guide",
+"title.calc":"Hit calculator","sub.calc":"Set up your build and watch every hit update instantly.",
+"title.dps":"DPS simulation","sub.dps":"Run a skill rotation against a target and see damage build over time.",
+"title.cmp":"Compare and stat value","sub.cmp":"Test an equipment swap, or find out which stat helps you most.",
+"title.guide":"Guide and formulas","sub.guide":"What the formulas are, what they assume, and what this tool leaves out.",
+"tb.builds":"Builds","tb.reset":"Reset",
+"sec.class":"Class and weapon","f.job":"Class preset","f.weapon":"Weapon type","f.weaponMult":"Weapon multiplier",
+"adv":"Advanced formula settings","f.statMult":"Main stat factor","h.statMult":"Standard is 4: (Main × 4 + Secondary)",
+"f.cap":"Damage cap per hit","h.cap":"0 means no cap",
+"sec.stats":"Base stats","f.main":"Main stat","f.sub":"Secondary stat","f.att":"Total attack","f.matt":"Total magic attack",
+"f.mastery":"Mastery","h.mastery":"Minimum hit as a % of maximum",
+"sec.mods":"Damage modifiers","f.dmg":"Damage %","h.dmg":"Added together with Boss damage %","f.boss":"Boss damage %",
+"f.fd":"Final damage","h.fd":"Every source multiplies separately","f.ied":"Ignore defense","h.ied":"Sources combine by multiplication, never above 100%",
+"b.addSource":"Add source","u.comb":"Combined","del":"Remove",
+"sec.crit":"Critical hits","f.critRate":"Critical rate","f.critDmg":"Critical damage","h.critDmg":"Total shown in your stat window",
+"sec.target":"Skill and target","f.skillPct":"Skill damage %","f.lines":"Hits per cast","f.target":"Target","t.boss":"Boss","t.mob":"Normal monster",
+"f.def":"Target defense","h.def":"Tap a value to fill it in, or type your own","f.hp":"Target HP (optional)","h.hp":"Used for hits and time needed to defeat",
+"r.avg":"Average hit","r.avgSub":"Includes your chance to crit","r.avgShort":"Avg hit","r.perCast":"Per cast","r.normal":"Normal hit","r.crit":"Critical hit","r.breakdown":"Where your damage comes from",
+"kv.max":"Highest normal hit","kv.min":"Lowest normal hit","kv.cmax":"Highest crit","kv.cmin":"Lowest crit","kv.stat":"Stat attack",
+"kv.ied":"Total ignore defense","kv.eff":"Defense left on target","kv.lost":"Damage lost to defense","kv.hits":"Hits to defeat","kv.casts":"Casts to defeat",
+"fac.base":"Base hit (stat × attack)","fac.dmg":"Damage % + Boss %","fac.fd":"Final damage","fac.skill":"Skill damage","fac.crit":"Critical (expected)","fac.mast":"Mastery (average)","fac.def":"Target defense",
+"w.cap":"The damage cap is limiting your hits.","w.zero":"Defense left on the target is 100% or more, so your hits deal no damage.",
+"sec.sim":"Simulation","f.duration":"Duration","d.usesBuild":"The rotation uses the stats from the Hit calculator tab.",
+"sec.skills":"Skill rotation","d.skillsHint":"The top skill is cast first whenever it is off cooldown. A skill with 0 cooldown becomes your filler.",
+"b.addSkill":"Add skill","d.example":"This is a sample rotation. Replace the values with the numbers from your in-game skill tooltips.",
+"sec.buffs":"Buffs","d.buffsHint":"A buff is recast as soon as its cooldown ends. Cooldown 0 keeps it on the whole time.","b.addBuff":"Add buff",
+"sk.name":"Skill name","sk.pct":"Damage %","sk.lines":"Hits","sk.cd":"Cooldown (s)","sk.delay":"Cast time (s)","sk.new":"New skill","sk.filler":"Filler attack","sk.core":"Core skill","sk.burst":"Burst skill",
+"bf.name":"Buff name","bf.dur":"Duration (s)","bf.cd":"Cooldown (s)","bf.dmg":"Damage %","bf.fd":"Final dmg %","bf.crit":"Crit dmg %","bf.att":"Attack %","bf.new":"New buff","bf.damage":"Damage buff","bf.attack":"Attack buff",
+"on":"On","up":"Move up","down":"Move down",
+"d.dps":"Damage per second","d.total":"Total damage","d.casts":"Casts","d.avgCast":"Average per cast","d.ttk":"Time to defeat","d.noKill":"Not defeated in time, estimated",
+"d.cum":"Cumulative damage","d.burst":"Damage per second over time","d.share":"Damage by skill","d.uptime":"Buff uptime","d.empty":"Turn on at least one skill to run the simulation.","d.kill":"Defeated",
+"u.s":"s","u.m":"m",
+"sec.delta":"Changes in build B","c.hint":"Build B is your current build plus these changes. Use negative numbers to remove stats.",
+"cf.main":"Main stat change","cf.sub":"Secondary stat change","cf.attFlat":"Attack change (flat)","cf.attPct":"Attack change %","cf.dmg":"Damage % change","cf.boss":"Boss damage % change",
+"cf.fd":"Extra final damage %","cf.ied":"Extra ignore defense %","cf.crit":"Crit damage change","cf.critRate":"Crit rate change","b.clear":"Clear changes",
+"c.up":"Build B is stronger by","c.dn":"Build B is weaker by","c.eq":"No difference between builds","c.metric":"Per hit","c.a":"Build A","c.b":"Build B","c.chg":"Change",
+"sec.eff":"Stat value ranking","e.hint":"Shows how much your average hit grows if you gain the amount in each row. Edit an amount to match the item you are considering.",
+"ef.dmg":"Damage %","ef.boss":"Boss damage %","ef.fd":"Final damage %","ef.ied":"Ignore defense %","ef.crit":"Crit damage %","ef.attPct":"Attack %","ef.attFlat":"Attack (flat)","ef.mainPct":"Main stat %","ef.main":"Main stat (flat)","ef.sub":"Secondary stat (flat)",
+"e.best":"Best value","e.amount":"Amount",
+"m.builds":"Saved builds","m.name":"Name this build","m.save":"Save build","m.empty":"No saved builds yet. Name your current build and save it.","m.backup":"Backup and restore","m.backupHint":"Copy this JSON to keep a backup, or paste a saved one and import it.",
+"m.copy":"Copy JSON","m.import":"Import","m.close":"Close","m.load":"Load","m.del":"Delete",
+"ok.saved":"Build saved","ok.loaded":"Build loaded","ok.deleted":"Build deleted","ok.reset":"Reset to defaults","ok.copied":"Copied to clipboard","ok.imported":"Build imported",
+"err.import":"Could not read that data. Paste JSON copied from this tool.","err.name":"Enter a name before saving.","err.copy":"Copy failed. Select the text and copy it manually.","undo":"Undo"
+},
+th: {
+"nav.calc":"คำนวณดาเมจ","nav.dps":"จำลอง DPS","nav.cmp":"เปรียบเทียบ","nav.guide":"คู่มือ",
+"nav.calc.s":"คำนวณ","nav.dps.s":"DPS","nav.cmp.s":"เทียบ","nav.guide.s":"คู่มือ",
+"title.calc":"คำนวณดาเมจต่อฮิต","sub.calc":"ตั้งค่าตัวละคร แล้วดูดาเมจอัปเดตทันที",
+"title.dps":"จำลอง DPS ตามเวลา","sub.dps":"ใส่ลำดับสกิลและบัฟ แล้วดูดาเมจสะสมกับเป้าหมาย",
+"title.cmp":"เปรียบเทียบและความคุ้มค่า","sub.cmp":"ลองเปลี่ยนอุปกรณ์ หรือดูว่าสเตตัสไหนคุ้มที่สุด",
+"title.guide":"คู่มือและสูตรคำนวณ","sub.guide":"สูตรที่ใช้ ข้อสมมติ และสิ่งที่เครื่องมือนี้ยังไม่คำนวณ",
+"tb.builds":"บิลด์","tb.reset":"รีเซ็ต",
+"sec.class":"อาชีพและอาวุธ","f.job":"พรีเซ็ตอาชีพ","f.weapon":"ประเภทอาวุธ","f.weaponMult":"ตัวคูณอาวุธ",
+"adv":"ตั้งค่าสูตรขั้นสูง","f.statMult":"ตัวคูณสเตตัสหลัก","h.statMult":"ค่ามาตรฐานคือ 4 → (หลัก × 4 + รอง)",
+"f.cap":"เพดานดาเมจต่อฮิต","h.cap":"0 = ไม่จำกัด",
+"sec.stats":"ค่าสเตตัสพื้นฐาน","f.main":"สเตตัสหลัก","f.sub":"สเตตัสรอง","f.att":"พลังโจมตีรวม","f.matt":"พลังโจมตีเวทย์รวม",
+"f.mastery":"Mastery","h.mastery":"ฮิตต่ำสุดเป็น % ของฮิตสูงสุด",
+"sec.mods":"ตัวคูณดาเมจ","f.dmg":"Damage %","h.dmg":"บวกรวมกับ Boss Damage %","f.boss":"Boss Damage %",
+"f.fd":"Final Damage","h.fd":"แต่ละแหล่งคูณแยกกัน","f.ied":"Ignore Defense","h.ied":"แต่ละแหล่งรวมกันแบบคูณ และไม่เกิน 100%",
+"b.addSource":"เพิ่มแหล่ง","u.comb":"รวม","del":"ลบ",
+"sec.crit":"คริติคอล","f.critRate":"อัตราคริ","f.critDmg":"ดาเมจคริ","h.critDmg":"ค่ารวมจากหน้าต่างสเตตัส",
+"sec.target":"สกิลและเป้าหมาย","f.skillPct":"ดาเมจสกิล %","f.lines":"จำนวนฮิตต่อครั้ง","f.target":"เป้าหมาย","t.boss":"บอส","t.mob":"มอนสเตอร์ทั่วไป",
+"f.def":"ค่าป้องกันเป้าหมาย","h.def":"แตะค่าเพื่อกรอกอัตโนมัติ หรือพิมพ์เอง","f.hp":"HP เป้าหมาย (ไม่บังคับ)","h.hp":"ใช้คำนวณจำนวนฮิตและเวลาที่ใช้ฆ่า",
+"r.avg":"ดาเมจเฉลี่ยต่อฮิต","r.avgSub":"รวมโอกาสติดคริติคอลแล้ว","r.avgShort":"เฉลี่ย","r.perCast":"ต่อการร่าย","r.normal":"ฮิตปกติ","r.crit":"ฮิตคริติคอล","r.breakdown":"ดาเมจมาจากไหนบ้าง",
+"kv.max":"ฮิตปกติสูงสุด","kv.min":"ฮิตปกติต่ำสุด","kv.cmax":"ฮิตคริสูงสุด","kv.cmin":"ฮิตคริต่ำสุด","kv.stat":"Stat Attack",
+"kv.ied":"Ignore Defense รวม","kv.eff":"ค่าป้องกันที่เหลือบนเป้าหมาย","kv.lost":"ดาเมจที่เสียให้ค่าป้องกัน","kv.hits":"จำนวนฮิตที่ใช้ฆ่า","kv.casts":"จำนวนครั้งที่ร่ายเพื่อฆ่า",
+"fac.base":"ดาเมจพื้นฐาน (Stat × พลังโจมตี)","fac.dmg":"Damage % + Boss %","fac.fd":"Final Damage","fac.skill":"ดาเมจสกิล","fac.crit":"คริติคอล (ค่าคาดหวัง)","fac.mast":"Mastery (เฉลี่ย)","fac.def":"ค่าป้องกันเป้าหมาย",
+"w.cap":"เพดานดาเมจกำลังจำกัดฮิตของคุณ","w.zero":"ค่าป้องกันที่เหลือบนเป้าหมายตั้งแต่ 100% ขึ้นไป ฮิตของคุณจึงไม่ทำดาเมจ",
+"sec.sim":"การจำลอง","f.duration":"ระยะเวลา","d.usesBuild":"ลำดับสกิลใช้ค่าสเตตัสจากแท็บคำนวณดาเมจ",
+"sec.skills":"ลำดับสกิล","d.skillsHint":"สกิลด้านบนจะถูกร่ายก่อนทันทีที่พร้อมใช้ สกิลที่คูลดาวน์ 0 จะเป็นสกิลรองที่ร่ายต่อเนื่อง",
+"b.addSkill":"เพิ่มสกิล","d.example":"นี่คือลำดับสกิลตัวอย่าง กรุณาแทนที่ด้วยตัวเลขจากคำอธิบายสกิลในเกม",
+"sec.buffs":"บัฟ","d.buffsHint":"บัฟจะถูกใช้ซ้ำทันทีที่คูลดาวน์หมด ถ้าคูลดาวน์ 0 บัฟจะเปิดตลอด","b.addBuff":"เพิ่มบัฟ",
+"sk.name":"ชื่อสกิล","sk.pct":"ดาเมจ %","sk.lines":"ฮิต","sk.cd":"คูลดาวน์ (วิ)","sk.delay":"เวลาร่าย (วิ)","sk.new":"สกิลใหม่","sk.filler":"สกิลโจมตีทั่วไป","sk.core":"สกิลหลัก","sk.burst":"สกิลระเบิดดาเมจ",
+"bf.name":"ชื่อบัฟ","bf.dur":"ระยะเวลา (วิ)","bf.cd":"คูลดาวน์ (วิ)","bf.dmg":"Damage %","bf.fd":"Final dmg %","bf.crit":"ดาเมจคริ %","bf.att":"พลังโจมตี %","bf.new":"บัฟใหม่","bf.damage":"บัฟดาเมจ","bf.attack":"บัฟพลังโจมตี",
+"on":"เปิดใช้","up":"เลื่อนขึ้น","down":"เลื่อนลง",
+"d.dps":"ดาเมจต่อวินาที","d.total":"ดาเมจรวม","d.casts":"จำนวนครั้งที่ร่าย","d.avgCast":"เฉลี่ยต่อการร่าย","d.ttk":"เวลาที่ใช้ฆ่า","d.noKill":"ยังไม่ตายในเวลาที่ตั้ง ประมาณการ",
+"d.cum":"ดาเมจสะสม","d.burst":"ดาเมจต่อวินาทีตามช่วงเวลา","d.share":"สัดส่วนดาเมจแยกตามสกิล","d.uptime":"เวลาที่บัฟทำงาน","d.empty":"เปิดใช้อย่างน้อยหนึ่งสกิลเพื่อเริ่มจำลอง","d.kill":"ฆ่าสำเร็จ",
+"u.s":"วิ","u.m":"นาที",
+"sec.delta":"ส่วนที่เปลี่ยนใน Build B","c.hint":"Build B คือตัวละครปัจจุบันบวกค่าเหล่านี้ ใส่ค่าติดลบเพื่อลดสเตตัส",
+"cf.main":"สเตตัสหลักที่เปลี่ยน","cf.sub":"สเตตัสรองที่เปลี่ยน","cf.attFlat":"พลังโจมตีที่เปลี่ยน (ค่าคงที่)","cf.attPct":"พลังโจมตีที่เปลี่ยน %","cf.dmg":"Damage % ที่เปลี่ยน","cf.boss":"Boss Damage % ที่เปลี่ยน",
+"cf.fd":"Final Damage % เพิ่ม","cf.ied":"Ignore Defense % เพิ่ม","cf.crit":"ดาเมจคริที่เปลี่ยน","cf.critRate":"อัตราคริที่เปลี่ยน","b.clear":"ล้างค่าที่เปลี่ยน",
+"c.up":"Build B แรงกว่า","c.dn":"Build B อ่อนกว่า","c.eq":"สองบิลด์ไม่ต่างกัน","c.metric":"ต่อฮิต","c.a":"Build A","c.b":"Build B","c.chg":"ผลต่าง",
+"sec.eff":"จัดอันดับความคุ้มค่าของสเตตัส","e.hint":"แสดงว่าดาเมจเฉลี่ยของคุณเพิ่มขึ้นเท่าไรถ้าได้ค่าตามจำนวนในแต่ละแถว แก้จำนวนให้ตรงกับไอเทมที่กำลังพิจารณาได้",
+"ef.dmg":"Damage %","ef.boss":"Boss Damage %","ef.fd":"Final Damage %","ef.ied":"Ignore Defense %","ef.crit":"ดาเมจคริ %","ef.attPct":"พลังโจมตี %","ef.attFlat":"พลังโจมตี (ค่าคงที่)","ef.mainPct":"สเตตัสหลัก %","ef.main":"สเตตัสหลัก (ค่าคงที่)","ef.sub":"สเตตัสรอง (ค่าคงที่)",
+"e.best":"คุ้มที่สุด","e.amount":"จำนวน",
+"m.builds":"บิลด์ที่บันทึกไว้","m.name":"ตั้งชื่อบิลด์นี้","m.save":"บันทึกบิลด์","m.empty":"ยังไม่มีบิลด์ที่บันทึก ตั้งชื่อบิลด์ปัจจุบันแล้วกดบันทึก","m.backup":"สำรองและกู้คืน","m.backupHint":"คัดลอก JSON นี้เก็บไว้เป็นข้อมูลสำรอง หรือวางข้อมูลที่เคยสำรองแล้วกดนำเข้า",
+"m.copy":"คัดลอก JSON","m.import":"นำเข้า","m.close":"ปิด","m.load":"โหลด","m.del":"ลบ",
+"ok.saved":"บันทึกบิลด์แล้ว","ok.loaded":"โหลดบิลด์แล้ว","ok.deleted":"ลบบิลด์แล้ว","ok.reset":"รีเซ็ตเป็นค่าเริ่มต้นแล้ว","ok.copied":"คัดลอกแล้ว","ok.imported":"นำเข้าบิลด์แล้ว",
+"err.import":"อ่านข้อมูลไม่ได้ กรุณาวาง JSON ที่คัดลอกจากเครื่องมือนี้","err.name":"ตั้งชื่อก่อนบันทึก","err.copy":"คัดลอกไม่สำเร็จ กรุณาเลือกข้อความแล้วคัดลอกเอง","undo":"ย้อนกลับ"
+}};
+
+var GUIDE = {
+en:{
+ quickH:"Quick start",
+ quick:["Pick a class preset, or keep Custom and type your own weapon multiplier.","Copy your numbers from the in-game stat window: main and secondary stat, total attack, damage, boss damage, final damage, ignore defense and crit.","Enter the skill's damage % and hits, choose Boss or Normal monster, then read your hit range on the right."],
+ formulaH:"The formula",
+ notesH:"How each part behaves",
+ notes:["Damage % and Boss damage % are added together into one bracket, so each extra point is worth a little less as the bracket grows.","Every Final damage source multiplies separately, so each one counts in full.","Ignore defense sources combine by multiplication: 50% and 40% give 70%, not 90%. It only matters while the target still has defense left after ignoring.","Mastery sets your lowest hit as a percentage of your highest hit.","Critical damage is the total from your stat window. A crit deals hit × (1 + crit damage). The average hit weights crits by your crit rate."],
+ glossH:"Glossary",
+ gloss:[["Stat attack","(Main stat × 4 + Secondary stat) × Weapon multiplier. Your stats turned into raw attack power."],["Damage % and Boss damage %","One additive bracket. Boss damage % only applies when the target is set to Boss."],["Final damage","Separate multipliers from skills, links and equipment. Each one multiplies the total."],["Ignore defense (IED)","Removes part of the target's defense. Multiple sources stack multiplicatively."],["Mastery","How high your minimum hit is compared with your maximum hit."],["Critical damage","The extra damage a crit deals on top of a normal hit."]],
+ limitsH:"What this tool leaves out",
+ limits:["Arcane, Sacred and Authentic Force, and level-difference penalties.","Bonuses that belong to a single skill, such as extra boss damage, ignore defense or crit on one attack. Fold them into Skill damage % for now.","Elemental resistance, damage over time, summons and other class mechanics.","Class-specific stat formulas, for example HP-based or three-stat classes. Use Main stat factor and Secondary stat to approximate them."],
+ note:"Formulas follow community research on GMS Reboot and are estimates. Class presets only fill in the weapon multiplier and stat pair. Sample stats and skill values are placeholders, so enter your own before making decisions."
+},
+th:{
+ quickH:"เริ่มใช้งานอย่างรวดเร็ว",
+ quick:["เลือกพรีเซ็ตอาชีพ หรือใช้แบบกำหนดเองแล้วพิมพ์ตัวคูณอาวุธเอง","คัดลอกค่าจากหน้าต่างสเตตัสในเกม ได้แก่ สเตตัสหลักและรอง พลังโจมตีรวม Damage Boss Damage Final Damage Ignore Defense และคริติคอล","กรอกดาเมจ % และจำนวนฮิตของสกิล เลือกเป้าหมายเป็นบอสหรือมอนสเตอร์ทั่วไป แล้วดูช่วงดาเมจทางด้านขวา"],
+ formulaH:"สูตรคำนวณ",
+ notesH:"แต่ละส่วนทำงานอย่างไร",
+ notes:["Damage % และ Boss Damage % ถูกบวกรวมกันเป็นก้อนเดียว ยิ่งก้อนใหญ่ขึ้น แต้มที่เพิ่มมาก็ให้ผลน้อยลงเล็กน้อย","Final Damage แต่ละแหล่งคูณแยกกัน จึงนับผลเต็มทุกแหล่ง","Ignore Defense รวมกันแบบคูณ เช่น 50% กับ 40% ได้ 70% ไม่ใช่ 90% และมีผลเฉพาะเมื่อเป้าหมายยังเหลือค่าป้องกันหลังหักแล้ว","Mastery กำหนดฮิตต่ำสุดเป็นเปอร์เซ็นต์ของฮิตสูงสุด","ดาเมจคริติคอลคือค่ารวมจากหน้าต่างสเตตัส ฮิตคริทำดาเมจ = ฮิต × (1 + ดาเมจคริ) ส่วนดาเมจเฉลี่ยถ่วงน้ำหนักตามอัตราคริ"],
+ glossH:"อธิบายศัพท์",
+ gloss:[["Stat Attack","(สเตตัสหลัก × 4 + สเตตัสรอง) × ตัวคูณอาวุธ คือค่าสเตตัสที่แปลงเป็นพลังโจมตีดิบ"],["Damage % และ Boss Damage %","ก้อนบวกรวมก้อนเดียว Boss Damage % จะมีผลเมื่อตั้งเป้าหมายเป็นบอสเท่านั้น"],["Final Damage","ตัวคูณแยกจากสกิล ลิงก์ และอุปกรณ์ แต่ละตัวคูณกับดาเมจรวม"],["Ignore Defense (IED)","ลดค่าป้องกันของเป้าหมายบางส่วน หลายแหล่งรวมกันแบบคูณ"],["Mastery","ฮิตต่ำสุดของคุณสูงแค่ไหนเมื่อเทียบกับฮิตสูงสุด"],["ดาเมจคริติคอล","ดาเมจส่วนเพิ่มที่ฮิตคริทำได้เหนือฮิตปกติ"]],
+ limitsH:"สิ่งที่เครื่องมือนี้ยังไม่คำนวณ",
+ limits:["Arcane, Sacred และ Authentic Force รวมถึงบทลงโทษจากความต่างเลเวล","โบนัสเฉพาะสกิลเดียว เช่น Boss Damage, Ignore Defense หรือคริเพิ่มเฉพาะสกิล ตอนนี้ให้รวมเข้าไปในดาเมจสกิล %","ธาตุต้านทาน ดาเมจต่อเนื่อง ซัมมอน และกลไกเฉพาะอาชีพ","สูตรสเตตัสเฉพาะบางอาชีพ เช่น อาชีพที่ใช้ HP หรือใช้สามสเตตัส ใช้ช่องตัวคูณสเตตัสหลักและสเตตัสรองเพื่อประมาณค่า"],
+ note:"สูตรอ้างอิงจากงานวิจัยของชุมชนผู้เล่น GMS Reboot และเป็นค่าประมาณ พรีเซ็ตอาชีพเติมแค่ตัวคูณอาวุธและคู่สเตตัส ส่วนค่าสเตตัสตัวอย่างและค่าสกิลเป็นตัวอย่าง กรุณาใส่ค่าจริงของคุณก่อนตัดสินใจ"
+}};
+
+/* =====================================================================
+   2. Game data
+   ===================================================================== */
+var WEAPONS = [
+ {id:"sword1h",m:1.2,en:"One-handed sword / axe / blunt",th:"ดาบ / ขวาน / กระบอง (มือเดียว)"},
+ {id:"sword2h",m:1.34,en:"Two-handed sword",th:"ดาบสองมือ"},
+ {id:"blunt2h",m:1.34,en:"Two-handed axe / blunt",th:"ขวาน / กระบอง (สองมือ)"},
+ {id:"spear",m:1.49,en:"Spear",th:"หอก"},
+ {id:"polearm",m:1.49,en:"Polearm",th:"ทวน"},
+ {id:"bow",m:1.3,en:"Bow",th:"ธนู"},
+ {id:"crossbow",m:1.35,en:"Crossbow",th:"หน้าไม้"},
+ {id:"dagger",m:1.3,en:"Dagger",th:"กริช"},
+ {id:"claw",m:1.75,en:"Claw",th:"กรงเล็บ"},
+ {id:"knuckle",m:1.7,en:"Knuckle",th:"นัคเคิล"},
+ {id:"gun",m:1.5,en:"Gun",th:"ปืน"},
+ {id:"cannon",m:1.5,en:"Hand cannon",th:"ปืนใหญ่มือถือ"},
+ {id:"staff",m:1.2,en:"Staff / wand",th:"ไม้เท้า / คทา"},
+ {id:"cane",m:1.3,en:"Cane",th:"เคน"},
+ {id:"katana",m:1.25,en:"Katana",th:"คาตานะ"},
+ {id:"custom",m:null,en:"Custom",th:"กำหนดเอง"}
+];
+var JOBS = [
+ {id:"custom",en:"Custom (any class)",th:"กำหนดเอง (ทุกอาชีพ)",weapon:null,main:"",sub:"",magic:false},
+ {id:"hero",en:"Hero",th:"ฮีโร่",weapon:"sword2h",main:"STR",sub:"DEX"},
+ {id:"dk",en:"Dark Knight",th:"ดาร์คไนท์",weapon:"spear",main:"STR",sub:"DEX"},
+ {id:"buc",en:"Buccaneer",th:"บุคคาเนียร์",weapon:"knuckle",main:"STR",sub:"DEX"},
+ {id:"bm",en:"Bowmaster",th:"โบว์มาสเตอร์",weapon:"bow",main:"DEX",sub:"STR"},
+ {id:"mm",en:"Marksman",th:"มาร์กส์แมน",weapon:"crossbow",main:"DEX",sub:"STR"},
+ {id:"cor",en:"Corsair",th:"คอร์แซร์",weapon:"gun",main:"DEX",sub:"STR"},
+ {id:"nl",en:"Night Lord",th:"ไนท์ลอร์ด",weapon:"claw",main:"LUK",sub:"DEX"},
+ {id:"shad",en:"Shadower",th:"แชโดว์เวอร์",weapon:"dagger",main:"LUK",sub:"STR + DEX"},
+ {id:"bis",en:"Bishop",th:"บิชอป",weapon:"staff",main:"INT",sub:"LUK",magic:true},
+ {id:"am",en:"Arch Mage",th:"อาร์คเมจ",weapon:"staff",main:"INT",sub:"LUK",magic:true}
+];
+var DEF_CHIPS = [0,50,100,200,250,300,380];
+var PAL = ["#ff8a3d","#6ea8ff","#4fd6a1","#a58bff","#ffd166","#ff6b81","#36d1e0","#c1e35b"];
+
+var EFF = [
+ {id:"dmg",u:"%",amt:1,mod:function(a){return {dmg:a};}},
+ {id:"boss",u:"%",amt:1,mod:function(a){return {boss:a};}},
+ {id:"fd",u:"%",amt:1,mod:function(a){return {fdExtra:[a]};}},
+ {id:"ied",u:"%",amt:1,mod:function(a){return {iedExtra:[a]};}},
+ {id:"crit",u:"%",amt:1,mod:function(a){return {crit:a};}},
+ {id:"attPct",u:"%",amt:1,mod:function(a){return {attPct:a};}},
+ {id:"attFlat",u:"",amt:10,mod:function(a){return {attFlat:a};}},
+ {id:"mainPct",u:"%",amt:1,mod:function(a,s){return {main:s.mainStat*a/100};}},
+ {id:"main",u:"",amt:100,mod:function(a){return {main:a};}},
+ {id:"sub",u:"",amt:100,mod:function(a){return {sub:a};}}
+];
+var CMPF = [["main","cf.main",""],["sub","cf.sub",""],["attFlat","cf.attFlat",""],["attPct","cf.attPct","%"],["dmg","cf.dmg","%"],["boss","cf.boss","%"],["fd","cf.fd","%"],["ied","cf.ied","%"],["crit","cf.crit","%"],["critRate","cf.critRate","%"]];
+
+/* =====================================================================
+   3. State
+   ===================================================================== */
+var _id = 0;
+function uid(){ _id++; return "k"+_id+Math.random().toString(36).slice(2,6); }
+function defSkills(){ return [
+ {id:uid(),nameKey:"sk.burst",name:"",pct:2400,lines:15,cd:60,delay:1.5,on:true},
+ {id:uid(),nameKey:"sk.core",name:"",pct:900,lines:8,cd:10,delay:0.7,on:true},
+ {id:uid(),nameKey:"sk.filler",name:"",pct:420,lines:6,cd:0,delay:0.5,on:true}
+];}
+function defBuffs(){ return [
+ {id:uid(),nameKey:"bf.damage",name:"",dur:30,cd:120,dmg:20,fd:10,crit:0,att:0,on:true},
+ {id:uid(),nameKey:"bf.attack",name:"",dur:60,cd:0,dmg:0,fd:0,crit:0,att:10,on:true}
+];}
+function defaults(){
+ var eff = {}; EFF.forEach(function(e){ eff[e.id]=e.amt; });
+ return {
+  calc:{job:"hero",weapon:"sword2h",weaponMult:1.34,statMult:4,cap:0,
+        mainStat:45000,subStat:4500,att:3500,mastery:90,
+        dmgPct:150,bossPct:250,fd:[30,20],ied:[50,40,30,20],
+        critRate:80,critDmg:65,skillPct:600,lines:8,target:"boss",defPct:300,hp:0},
+  dps:{duration:60,skills:defSkills(),buffs:defBuffs()},
+  cmp:{main:0,sub:0,attFlat:0,attPct:5,dmg:0,boss:10,fd:0,ied:0,crit:0,critRate:0},
+  eff:eff
+ };
+}
+
+/* =====================================================================
+   4. Helpers & persistence
+   ===================================================================== */
+var $ = function(s,el){ return (el||document).querySelector(s); };
+var $$ = function(s,el){ return Array.prototype.slice.call((el||document).querySelectorAll(s)); };
+function clamp(v,a,b){ return Math.min(b,Math.max(a,v)); }
+function num(v){ var n=parseFloat(v); return isFinite(n)?n:0; }
+function esc(s){ return String(s).replace(/[&<>"']/g,function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
+function getPath(o,p){ return p.split(".").reduce(function(a,k){ return a==null?a:a[k]; },o); }
+function setPath(o,p,v){ var ks=p.split("."), last=ks.pop(); var t=ks.reduce(function(a,k){ return a[k]; },o); t[last]=v; }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function ic(id){ return '<svg class="ic" aria-hidden="true"><use href="#'+id+'"/></svg>'; }
+
+var KEY="mapledmg.v1", BKEY="mapledmg.builds.v1";
+function cleanSkill(x){ x=x||{}; return {id:x.id||uid(),nameKey:x.nameKey||"",name:String(x.name||""),pct:num(x.pct),lines:num(x.lines),cd:num(x.cd),delay:num(x.delay),on:x.on!==false}; }
+function cleanBuff(x){ x=x||{}; return {id:x.id||uid(),nameKey:x.nameKey||"",name:String(x.name||""),dur:num(x.dur),cd:num(x.cd),dmg:num(x.dmg),fd:num(x.fd),crit:num(x.crit),att:num(x.att),on:x.on!==false}; }
+function merge(s,o){
+  if(!o||typeof o!=="object") return;
+  if(o.lang==="th"||o.lang==="en") s.lang=o.lang;
+  if(["calc","dps","cmp","guide"].indexOf(o.view)>=0) s.view=o.view;
+  ["calc","cmp","eff"].forEach(function(k){
+    if(o[k]&&typeof o[k]==="object"){
+      for(var p in s[k]){
+        var ov=o[k][p], dv=s[k][p];
+        if(ov===undefined||ov===null) continue;
+        if(Array.isArray(dv)){ if(Array.isArray(ov)) s[k][p]=ov.map(num); }
+        else if(typeof dv==="number"){ if(typeof ov==="number"&&isFinite(ov)) s[k][p]=ov; }
+        else if(typeof ov===typeof dv){ s[k][p]=ov; }
+      }
+    }
+  });
+  if(o.dps&&typeof o.dps==="object"){
+    if(typeof o.dps.duration==="number") s.dps.duration=o.dps.duration;
+    if(Array.isArray(o.dps.skills)&&o.dps.skills.length) s.dps.skills=o.dps.skills.map(cleanSkill);
+    if(Array.isArray(o.dps.buffs)) s.dps.buffs=o.dps.buffs.map(cleanBuff);
+  }
+}
+var S = (function(){
+  var d=defaults();
+  var s={lang:((navigator.language||"en").toLowerCase().indexOf("th")===0)?"th":"en",view:"calc",calc:d.calc,dps:d.dps,cmp:d.cmp,eff:d.eff};
+  try{ var raw=localStorage.getItem(KEY); if(raw) merge(s,JSON.parse(raw)); }catch(e){}
+  if(!JOBS.some(function(j){return j.id===s.calc.job;})) s.calc.job="custom";
+  if(!WEAPONS.some(function(w){return w.id===s.calc.weapon;})) s.calc.weapon="custom";
+  return s;
+})();
+function save(){ try{ localStorage.setItem(KEY,JSON.stringify({lang:S.lang,view:S.view,calc:S.calc,dps:S.dps,cmp:S.cmp,eff:S.eff})); }catch(e){} }
+var builds=[]; try{ builds=JSON.parse(localStorage.getItem(BKEY)||"[]"); if(!Array.isArray(builds)) builds=[]; }catch(e){ builds=[]; }
+function saveBuilds(){ try{ localStorage.setItem(BKEY,JSON.stringify(builds)); }catch(e){} }
+
+function t(k){ var d=I18N[S.lang]; if(d&&d[k]!==undefined) return d[k]; return I18N.en[k]!==undefined?I18N.en[k]:k; }
+
+/* ---------- number formatting ---------- */
+var SUF=["","K","M","B","T","Qa","Qi"];
+function fixed(v){ var a=Math.abs(v); return a<10?v.toFixed(2):a<100?v.toFixed(1):v.toFixed(0); }
+function compact(n){
+  if(!isFinite(n)) return "—";
+  var a=Math.abs(n); if(a<1000) return String(Math.round(n*100)/100);
+  var i=Math.min(SUF.length-1,Math.floor(Math.log10(a)/3)), v=n/Math.pow(1000,i), s=fixed(v);
+  if(Math.abs(Number(s))>=1000&&i<SUF.length-1){ i++; v=n/Math.pow(1000,i); s=fixed(v); }
+  return s+SUF[i];
+}
+var NF=new Intl.NumberFormat("en-US",{maximumFractionDigits:0});
+function full(n){ return isFinite(n)?NF.format(Math.round(n)):"—"; }
+function pct(n,d){ return (isFinite(n)?n:0).toFixed(d==null?1:d)+"%"; }
+function mult(n){ return "×"+(isFinite(n)?n.toFixed(3):"0"); }
+function fmtTime(s){ if(!isFinite(s)) return "—"; if(s<60) return s.toFixed(1)+t("u.s"); var m=Math.floor(s/60); return m+t("u.m")+" "+Math.round(s-m*60)+t("u.s"); }
+function skName(k,i){ return k.name||(k.nameKey?t(k.nameKey):t("sk.new")); }
+function bfName(b){ return b.name||(b.nameKey?t(b.nameKey):t("bf.new")); }
+
+/* =====================================================================
+   5. Damage engine
+   ===================================================================== */
+function compute(s,o){
+  o=o||{};
+  var main=Math.max(0,s.mainStat+(o.main||0)), sub=Math.max(0,s.subStat+(o.sub||0));
+  var attTot=Math.max(0,(s.att+(o.attFlat||0))*(1+(o.attPct||0)/100));
+  var statAtk=(main*s.statMult+sub)*s.weaponMult;
+  var boss=s.target==="boss";
+  var dmgSum=s.dmgPct+(o.dmg||0)+(boss?(s.bossPct+(o.boss||0)):0);
+  var dmgMult=Math.max(0,1+dmgSum/100);
+  var fdMult=1, i;
+  for(i=0;i<s.fd.length;i++) fdMult*=1+s.fd[i]/100;
+  if(o.fdExtra) for(i=0;i<o.fdExtra.length;i++) fdMult*=1+o.fdExtra[i]/100;
+  var keep=1;
+  for(i=0;i<s.ied.length;i++) keep*=1-clamp(s.ied[i],0,100)/100;
+  if(o.iedExtra) for(i=0;i<o.iedExtra.length;i++) keep*=1-clamp(o.iedExtra[i],0,100)/100;
+  var ied=1-keep;
+  var effDef=Math.max(0,s.defPct/100)*(1-ied);
+  var defMult=Math.max(0,1-effDef);
+  var skill=(o.skillPct!=null?o.skillPct:s.skillPct)/100;
+  var attMult=attTot/100;
+  var cd=Math.max(0,(s.critDmg+(o.crit||0))/100);
+  var cr=clamp(s.critRate+(o.critRate||0),0,100)/100;
+  var mast=clamp(s.mastery,0,100)/100;
+  var cap=s.cap>0?s.cap:Infinity;
+  var maxRaw=statAtk*attMult*dmgMult*fdMult*skill*defMult;
+  var nMax=Math.min(maxRaw,cap), nMin=Math.min(maxRaw*mast,cap);
+  var cMax=Math.min(maxRaw*(1+cd),cap), cMin=Math.min(maxRaw*mast*(1+cd),cap);
+  var avg=((nMin+nMax)/2)*(1-cr)+((cMin+cMax)/2)*cr;
+  return {statAtk:statAtk,attTot:attTot,attMult:attMult,dmgMult:dmgMult,fdMult:fdMult,ied:ied,effDef:effDef,defMult:defMult,skill:skill,
+          cd:cd,cr:cr,mast:mast,nMax:nMax,nMin:nMin,cMax:cMax,cMin:cMin,avg:avg,critMult:1+cr*cd,capped:isFinite(cap)&&maxRaw*(1+cd)>cap};
+}
+
+function simulate(c,sim){
+  var T=clamp(num(sim.duration),1,900);
+  var sk=[]; sim.skills.forEach(function(k,i){ if(k.on) sk.push({k:k,i:i}); });
+  if(!sk.length) return {ok:false};
+  var bf=[]; sim.buffs.forEach(function(b,i){ if(b.on) bf.push({b:b,i:i,next:0,until:-1,up:0,casts:0}); });
+  var next={}, per={};
+  sk.forEach(function(x){ next[x.k.id]=0; per[x.k.id]={dmg:0,casts:0,i:x.i,k:x.k}; });
+  var evT=[], evD=[], now=0, total=0, casts=0, guard=0, killT=null, hp=c.hp;
+  function advance(d){
+    for(var j=0;j<bf.length;j++){ var s=bf[j];
+      s.up+= s.b.cd<=0 ? d : clamp(s.until-now,0,d);
+    }
+    now+=d;
+  }
+  while(now<T && guard++<90000){
+    var mods={dmg:0,crit:0,attPct:0,fdExtra:[]};
+    for(var j=0;j<bf.length;j++){
+      var s=bf[j], b=s.b, active;
+      if(b.cd<=0){ active=true; }
+      else{
+        if(now>=s.next && b.dur>0){ s.until=now+b.dur; s.next=now+Math.max(b.cd,0.1); s.casts++; }
+        active=now<s.until;
+      }
+      if(active){ mods.dmg+=b.dmg; mods.crit+=b.crit; mods.attPct+=b.att; if(b.fd) mods.fdExtra.push(b.fd); }
+    }
+    var pick=null;
+    for(var q=0;q<sk.length;q++){ if(now+1e-9>=next[sk[q].k.id]){ pick=sk[q]; break; } }
+    if(!pick){ advance(0.1); continue; }
+    var k=pick.k, d=Math.max(0.05,k.delay);
+    var r=compute(c,{dmg:mods.dmg,crit:mods.crit,attPct:mods.attPct,fdExtra:mods.fdExtra,skillPct:k.pct});
+    var dmg=r.avg*Math.max(0,k.lines);
+    evT.push(now); evD.push(dmg);
+    total+=dmg; casts++; per[k.id].dmg+=dmg; per[k.id].casts++;
+    if(hp>0 && killT===null && total>=hp) killT=now;
+    next[k.id]=now+Math.max(0,k.cd);
+    advance(d);
+  }
+  return {ok:true,T:T,total:total,dps:total/T,casts:casts,killT:killT,evT:evT,evD:evD,per:per,
+          buffs:bf.map(function(x){ return {b:x.b,i:x.i,up:clamp(x.up/T*100,0,100),casts:x.casts}; })};
+}
+
+/* =====================================================================
+   6. Forms
+   ===================================================================== */
+function fld(o){
+  var lbl=o.lid?'<span class="lbl" id="'+o.lid+'"></span>'
+    :'<span class="lbl"><span data-i18n="'+o.l+'"></span>'+(o.echo?'<span class="echo" data-echo="'+o.k+'"></span>':'')+'</span>';
+  return '<label class="fld'+(o.span?' span2':'')+'">'+lbl+'<span class="ctl"><input type="number" inputmode="decimal" step="'+(o.step||"any")+'" data-k="'+o.k+'"'+(o.min!=null?' min="'+o.min+'"':'')+'>'+(o.u?'<em>'+o.u+'</em>':'')+'</span>'+(o.h?'<small class="hint" data-i18n="'+o.h+'"></small>':'')+'</label>';
+}
+function buildForms(){
+  var h='';
+  h+='<div class="group"><h2 class="gh" data-i18n="sec.class"></h2><div class="fgrid">'
+   +'<label class="fld span2"><span class="lbl" data-i18n="f.job"></span><span class="ctl sel"><select id="selJob" data-k="calc.job"></select></span></label>'
+   +'<label class="fld"><span class="lbl" data-i18n="f.weapon"></span><span class="ctl sel"><select id="selWeapon" data-k="calc.weapon"></select></span></label>'
+   +fld({k:"calc.weaponMult",l:"f.weaponMult",u:"×",step:"0.01"})
+   +'</div><details class="adv"><summary data-i18n="adv"></summary><div class="fgrid">'
+   +fld({k:"calc.statMult",l:"f.statMult",h:"h.statMult",step:"0.1"})
+   +fld({k:"calc.cap",l:"f.cap",h:"h.cap",min:0})
+   +'</div></details></div>';
+  h+='<div class="group"><h2 class="gh" data-i18n="sec.stats"></h2><div class="fgrid">'
+   +fld({k:"calc.mainStat",lid:"lblMain"})+fld({k:"calc.subStat",lid:"lblSub"})
+   +fld({k:"calc.att",lid:"lblAtt"})+fld({k:"calc.mastery",l:"f.mastery",u:"%",h:"h.mastery"})
+   +'</div></div>';
+  h+='<div class="group"><h2 class="gh" data-i18n="sec.mods"></h2><div class="fgrid">'
+   +fld({k:"calc.dmgPct",l:"f.dmg",u:"%",h:"h.dmg"})+fld({k:"calc.bossPct",l:"f.boss",u:"%"})
+   +'</div>'
+   +'<div class="sublbl" data-i18n="f.fd"></div><small class="hint" data-i18n="h.fd"></small><div id="list-fd"></div>'
+   +'<div class="sublbl" data-i18n="f.ied"></div><small class="hint" data-i18n="h.ied"></small><div id="list-ied"></div></div>';
+  h+='<div class="group"><h2 class="gh" data-i18n="sec.crit"></h2><div class="fgrid">'
+   +fld({k:"calc.critRate",l:"f.critRate",u:"%"})+fld({k:"calc.critDmg",l:"f.critDmg",u:"%",h:"h.critDmg"})
+   +'</div></div>';
+  h+='<div class="group"><h2 class="gh" data-i18n="sec.target"></h2><div class="fgrid">'
+   +fld({k:"calc.skillPct",l:"f.skillPct",u:"%"})+fld({k:"calc.lines",l:"f.lines",min:0})
+   +'<div class="fld span2"><span class="lbl" data-i18n="f.target"></span><div class="seg wide" id="segTarget">'
+   +'<button data-target="boss" aria-pressed="false" data-i18n="t.boss"></button><button data-target="mob" aria-pressed="false" data-i18n="t.mob"></button></div></div>'
+   +fld({k:"calc.defPct",l:"f.def",u:"%",h:"h.def",span:1})
+   +fld({k:"calc.hp",l:"f.hp",h:"h.hp",echo:1,min:0})
+   +'<div class="span2" style="margin-top:-4px"><div class="chips" id="defChips">'
+   +DEF_CHIPS.map(function(v){ return '<button class="chip" data-def="'+v+'">'+v+'%</button>'; }).join("")
+   +'</div></div></div></div>';
+  $("#formCalc").innerHTML=h;
+
+  $("#simForm").innerHTML=fld({k:"dps.duration",l:"f.duration",u:"s",min:1})+fld({k:"calc.hp",l:"f.hp",h:"h.hp",echo:1,min:0});
+  $("#cmpForm").innerHTML=CMPF.map(function(f){ return fld({k:"cmp."+f[0],l:f[1],u:f[2],min:f[0]==="ied"?0:null}); }).join("");
+}
+
+function fillSelects(){
+  var L=S.lang;
+  $("#selJob").innerHTML=JOBS.map(function(j){ return '<option value="'+j.id+'">'+esc(j[L])+'</option>'; }).join("");
+  $("#selWeapon").innerHTML=WEAPONS.map(function(w){ return '<option value="'+w.id+'">'+esc(w[L])+(w.m?" (×"+w.m+")":"")+'</option>'; }).join("");
+  $("#selJob").value=S.calc.job; $("#selWeapon").value=S.calc.weapon;
+}
+function updateLabels(){
+  var j=JOBS.filter(function(x){return x.id===S.calc.job;})[0]||JOBS[0];
+  function sfx(x){ return x?" ("+x+")":""; }
+  $("#lblMain").textContent=t("f.main")+sfx(j.main);
+  $("#lblSub").textContent=t("f.sub")+sfx(j.sub);
+  $("#lblAtt").textContent=t(j.magic?"f.matt":"f.att");
+}
+function syncInputs(){
+  $$("[data-k]").forEach(function(el){ var v=getPath(S,el.dataset.k); if(v!==undefined) el.value=String(v); });
+}
+function applyI18n(){
+  $$("[data-i18n]").forEach(function(el){ el.textContent=t(el.dataset.i18n); });
+  $$("[data-i18n-ph]").forEach(function(el){ el.placeholder=t(el.dataset.i18nPh); });
+  $$("[data-i18n-aria]").forEach(function(el){ el.setAttribute("aria-label",t(el.dataset.i18nAria)); });
+}
+function renderLists(){
+  ["fd","ied"].forEach(function(kind){
+    var arr=S.calc[kind], label=t(kind==="fd"?"f.fd":"f.ied");
+    $("#list-"+kind).innerHTML=arr.map(function(v,i){
+      return '<div class="lrow"><label class="ctl"><input type="number" inputmode="decimal" step="any" data-list="'+kind+'" data-i="'+i+'" value="'+v+'" aria-label="'+esc(label)+" "+(i+1)+'"><em>%</em></label>'
+        +'<button class="btn icon ghost" data-del="'+kind+'" data-i="'+i+'" aria-label="'+esc(t("del"))+'">'+ic("i-x")+'</button></div>';
+    }).join("")+'<div class="lfoot"><button class="btn sm" data-add="'+kind+'">'+ic("i-plus")+t("b.addSource")+'</button><span class="sum" id="sum-'+kind+'"></span></div>';
+  });
+}
+function updateSums(){
+  var f=1; S.calc.fd.forEach(function(v){ f*=1+v/100; });
+  var k=1; S.calc.ied.forEach(function(v){ k*=1-clamp(v,0,100)/100; });
+  var a=$("#sum-fd"), b=$("#sum-ied");
+  if(a) a.innerHTML="<small>"+t("u.comb")+"</small>"+mult(f);
+  if(b) b.innerHTML="<small>"+t("u.comb")+"</small>"+pct((1-k)*100);
+  $$("[data-echo]").forEach(function(el){ var v=getPath(S,el.dataset.echo); el.textContent=v>0?compact(v):""; });
+  $$("#defChips .chip").forEach(function(c){ c.classList.toggle("on",num(c.dataset.def)===S.calc.defPct); });
+  $$("#segTarget button").forEach(function(b2){ b2.setAttribute("aria-pressed",String(b2.dataset.target===S.calc.target)); });
+}
+
+/* ---------- skills & buffs ---------- */
+function mini(f,label,val,unit){
+  return '<label class="fld"><span class="lbl">'+esc(label)+'</span><span class="ctl"><input type="number" inputmode="decimal" step="any" data-f="'+f+'" value="'+val+'">'+(unit?'<em>'+unit+'</em>':'')+'</span></label>';
+}
+function itemHead(name,ph,on,i,n,label){
+  return '<div class="item-h"><input class="nm" data-f="name" value="'+esc(name)+'" placeholder="'+esc(ph)+'" aria-label="'+esc(label)+'">'
+   +'<label class="sw" title="'+esc(t("on"))+'"><input type="checkbox" data-f="on" '+(on?"checked":"")+' aria-label="'+esc(t("on"))+'"><i></i></label>'
+   +'<button class="btn icon sm ghost" data-act="up" aria-label="'+esc(t("up"))+'"'+(i===0?" disabled":"")+'>'+ic("i-up")+'</button>'
+   +'<button class="btn icon sm ghost" data-act="down" aria-label="'+esc(t("down"))+'"'+(i===n-1?" disabled":"")+'>'+ic("i-down")+'</button>'
+   +'<button class="btn icon sm ghost danger" data-act="del" aria-label="'+esc(t("del"))+'">'+ic("i-x")+'</button></div>';
+}
+function renderSkills(){
+  var arr=S.dps.skills;
+  $("#skillList").innerHTML=arr.map(function(k,i){
+    return '<div class="item'+(k.on?"":" off")+'" data-id="'+k.id+'" style="--c:'+PAL[i%PAL.length]+'">'
+     +itemHead(k.name,k.nameKey?t(k.nameKey):t("sk.new"),k.on,i,arr.length,t("sk.name"))
+     +'<div class="fgrid c4">'+mini("pct",t("sk.pct"),k.pct,"%")+mini("lines",t("sk.lines"),k.lines,"")+mini("cd",t("sk.cd"),k.cd,"")+mini("delay",t("sk.delay"),k.delay,"")+'</div></div>';
+  }).join("");
+}
+function renderBuffs(){
+  var arr=S.dps.buffs;
+  $("#buffList").innerHTML=arr.map(function(b,i){
+    return '<div class="item'+(b.on?"":" off")+'" data-id="'+b.id+'" style="--c:'+PAL[(i+4)%PAL.length]+'">'
+     +itemHead(b.name,b.nameKey?t(b.nameKey):t("bf.new"),b.on,i,arr.length,t("bf.name"))
+     +'<div class="fgrid c3">'+mini("dur",t("bf.dur"),b.dur,"")+mini("cd",t("bf.cd"),b.cd,"")+mini("dmg",t("bf.dmg"),b.dmg,"%")
+     +mini("fd",t("bf.fd"),b.fd,"%")+mini("crit",t("bf.crit"),b.crit,"%")+mini("att",t("bf.att"),b.att,"%")+'</div></div>';
+  }).join("");
+}
+
+/* =====================================================================
+   7. Rendering: calculator
+   ===================================================================== */
+function track(label,mn,mx,cls,scale){
+  var left=mn/scale*100, w=Math.max(0.8,(mx-mn)/scale*100), mid=((mn+mx)/2)/scale*100;
+  return '<div class="trk"><div class="trk-h"><span>'+label+'</span><span class="v">'+compact(mn)+' – '+compact(mx)+'</span></div>'
+   +'<div class="trk-b"><i class="'+cls+'" style="left:'+left.toFixed(2)+'%;width:'+w.toFixed(2)+'%"></i><u style="left:'+mid.toFixed(2)+'%"></u></div></div>';
+}
+function kvRow(label,val,sub){ return '<div><dt>'+label+'</dt><dd>'+val+(sub?'<small>'+sub+'</small>':'')+'</dd></div>'; }
+function renderCalc(){
+  var c=S.calc, r=compute(c), avg=r.avg, cast=avg*Math.max(0,c.lines);
+  var scale=Math.max(r.cMax,r.nMax,1);
+  var h='<div class="hero"><div class="hero-l"><span class="hero-lbl">'+t("r.avg")+'</span><div class="dmg">'+compact(avg)+'</div>'
+   +'<div class="full">'+full(avg)+' · '+t("r.avgSub")+'</div></div>'
+   +'<div class="hero-r"><span>'+t("r.perCast")+'</span><b>'+compact(cast)+'</b></div></div>';
+  h+=track(t("r.normal"),r.nMin,r.nMax,"i-n",scale)+track(t("r.crit"),r.cMin,r.cMax,"i-c",scale);
+  var w="";
+  if(r.capped) w+='<div class="warn">'+t("w.cap")+'</div>';
+  if(r.defMult<=0) w+='<div class="warn">'+t("w.zero")+'</div>';
+  h+=w?'<div style="margin-top:16px">'+w+'</div>':"";
+  var rows=[kvRow(t("kv.max"),compact(r.nMax),full(r.nMax)),kvRow(t("kv.min"),compact(r.nMin),full(r.nMin)),
+            kvRow(t("kv.cmax"),compact(r.cMax),full(r.cMax)),kvRow(t("kv.cmin"),compact(r.cMin),full(r.cMin)),
+            kvRow(t("kv.stat"),full(r.statAtk)),kvRow(t("kv.ied"),pct(r.ied*100)),
+            kvRow(t("kv.eff"),pct(r.effDef*100)),kvRow(t("kv.lost"),pct((1-r.defMult)*100))];
+  if(c.hp>0&&avg>0){
+    rows.push(kvRow(t("kv.hits"),full(Math.ceil(c.hp/avg))));
+    rows.push(kvRow(t("kv.casts"),full(Math.ceil(c.hp/(avg*Math.max(1,c.lines))))));
+  }
+  h+='<dl class="kv">'+rows.join("")+'</dl>';
+  $("#stage").innerHTML=h;
+  $("#fabVal").textContent=compact(avg);
+
+  var base=r.statAtk*r.attMult;
+  var facs=[{k:"fac.dmg",m:r.dmgMult},{k:"fac.fd",m:r.fdMult},{k:"fac.skill",m:r.skill},{k:"fac.crit",m:r.critMult}];
+  var sum=0; facs.forEach(function(f){ f.l=f.m>1?Math.log(f.m):0; sum+=f.l; });
+  var b='<div class="brow"><div class="brow-h"><span>'+t("fac.base")+'</span><b>'+compact(base)+'</b></div></div>';
+  facs.forEach(function(f){
+    var share=sum>0?f.l/sum*100:0;
+    b+='<div class="brow"><div class="brow-h"><span>'+t(f.k)+'</span><b>'+mult(f.m)+'<small>'+share.toFixed(0)+'%</small></b></div><div class="bar"><i style="width:'+share.toFixed(1)+'%"></i></div></div>';
+  });
+  [{k:"fac.mast",m:(1+r.mast)/2},{k:"fac.def",m:r.defMult}].forEach(function(f){
+    var loss=clamp((1-f.m)*100,0,100);
+    b+='<div class="brow"><div class="brow-h"><span>'+t(f.k)+'</span><b>'+mult(f.m)+'<small>−'+loss.toFixed(0)+'%</small></b></div><div class="bar neg"><i style="width:'+loss.toFixed(1)+'%"></i></div></div>';
+  });
+  $("#break").innerHTML=b;
+}
+
+/* =====================================================================
+   8. Rendering: DPS
+   ===================================================================== */
+function chartCum(pts,T,killT){
+  var W=640,H=250,L=58,R=14,Tp=16,B=30, mx=0, i;
+  for(i=0;i<pts.length;i++) if(pts[i].v>mx) mx=pts[i].v;
+  if(mx<=0) mx=1;
+  function X(x){ return L+(x/T)*(W-L-R); } function Y(v){ return Tp+(1-v/mx)*(H-Tp-B); }
+  var g="";
+  for(i=0;i<=4;i++){ var y=Y(mx*i/4); g+='<line class="gl" x1="'+L+'" x2="'+(W-R)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'"/><text class="ax" x="'+(L-8)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end">'+compact(mx*i/4)+'</text>'; }
+  for(i=0;i<=4;i++){ var xx=T*i/4; g+='<text class="ax" x="'+X(xx).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">'+Math.round(xx)+t("u.s")+'</text>'; }
+  var line=pts.map(function(p,j){ return (j?"L":"M")+X(p.t).toFixed(1)+" "+Y(p.v).toFixed(1); }).join("");
+  var area=line+"L"+X(pts[pts.length-1].t).toFixed(1)+" "+Y(0).toFixed(1)+"L"+X(pts[0].t).toFixed(1)+" "+Y(0).toFixed(1)+"Z";
+  var kill="";
+  if(killT!=null){ var kx=X(killT); kill='<line class="kl" x1="'+kx.toFixed(1)+'" x2="'+kx.toFixed(1)+'" y1="'+Tp+'" y2="'+(H-B)+'"/><text class="kt" x="'+Math.min(kx+6,W-R-40).toFixed(1)+'" y="'+(Tp+12)+'">'+t("d.kill")+" "+fmtTime(killT)+'</text>'; }
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(t("d.cum"))+'"><defs><linearGradient id="gCum" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a3d" stop-opacity=".42"/><stop offset="1" stop-color="#ff8a3d" stop-opacity="0"/></linearGradient></defs>'
+   +g+'<path d="'+area+'" fill="url(#gCum)"/><path d="'+line+'" fill="none" stroke="#ff8a3d" stroke-width="2.2" stroke-linejoin="round"/>'+kill+'</svg>';
+}
+function chartBurst(vals,bs){
+  var W=640,H=190,L=58,R=14,Tp=12,B=28, mx=0, best=0, i;
+  for(i=0;i<vals.length;i++) if(vals[i]>mx){ mx=vals[i]; best=i; }
+  if(mx<=0) mx=1;
+  function Y(v){ return Tp+(1-v/mx)*(H-Tp-B); }
+  var g="", bw=(W-L-R)/vals.length;
+  for(i=0;i<=3;i++){ var y=Y(mx*i/3); g+='<line class="gl" x1="'+L+'" x2="'+(W-R)+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+'"/><text class="ax" x="'+(L-8)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end">'+compact(mx*i/3)+'</text>'; }
+  var bars=vals.map(function(v,j){ var y2=Y(v); return '<rect x="'+(L+j*bw+1).toFixed(1)+'" y="'+y2.toFixed(1)+'" width="'+Math.max(1,bw-2).toFixed(1)+'" height="'+Math.max(0,(H-B)-y2).toFixed(1)+'" rx="2" fill="'+(j===best?"#ffd166":"#ff8a3d")+'" opacity="'+(j===best?1:0.72)+'"/>'; }).join("");
+  var ticks=""; for(i=0;i<=4;i++){ var tt=Math.round(vals.length*bs*i/4); ticks+='<text class="ax" x="'+(L+(W-L-R)*i/4).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle">'+tt+t("u.s")+'</text>'; }
+  return '<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(t("d.burst"))+'">'+g+bars+ticks+'</svg>';
+}
+function renderDps(){
+  var out=$("#dpsOut"), c=S.calc, res=simulate(c,S.dps);
+  if(!res.ok){ out.innerHTML='<div class="empty">'+t("d.empty")+'</div>'; return; }
+  var T=res.T, hp=c.hp, i;
+  var h='<div class="hero"><div class="hero-l"><span class="hero-lbl">'+t("d.dps")+'</span><div class="dmg">'+compact(res.dps)+'</div><div class="full">'+full(res.dps)+" / "+t("u.s")+'</div></div>'
+   +'<div class="hero-r"><span>'+t("d.total")+'</span><b>'+compact(res.total)+'</b></div></div>';
+  var rows=[kvRow(t("d.casts"),full(res.casts)),kvRow(t("d.avgCast"),compact(res.casts?res.total/res.casts:0))];
+  if(hp>0){
+    if(res.killT!=null) rows.push(kvRow(t("d.ttk"),fmtTime(res.killT)));
+    else rows.push(kvRow(t("d.noKill"),"≈ "+(res.dps>0?fmtTime(hp/res.dps):"—")));
+  }
+  h+='<dl class="kv">'+rows.join("")+'</dl>';
+  // cumulative
+  var n=Math.min(120,Math.max(20,Math.ceil(T*2))), pts=[{t:0,v:0}], p=0, cum=0;
+  for(i=1;i<=n;i++){ var edge=T*i/n; while(p<res.evT.length&&res.evT[p]<=edge){ cum+=res.evD[p]; p++; } pts.push({t:edge,v:cum}); }
+  h+='<div class="subh"><span>'+t("d.cum")+'</span></div>'+chartCum(pts,T,hp>0?res.killT:null);
+  // burst
+  var bs=Math.max(1,Math.ceil(T/60)), nb=Math.ceil(T/bs), vals=[]; for(i=0;i<nb;i++) vals.push(0);
+  for(i=0;i<res.evT.length;i++){ var bi=Math.min(nb-1,Math.floor(res.evT[i]/bs)); vals[bi]+=res.evD[i]; }
+  vals=vals.map(function(v){ return v/bs; });
+  h+='<div class="subh"><span>'+t("d.burst")+'</span></div>'+chartBurst(vals,bs);
+  // share
+  var list=[]; for(var id in res.per) list.push(res.per[id]);
+  list.sort(function(a,b){ return b.dmg-a.dmg; });
+  h+='<div class="subh"><span>'+t("d.share")+'</span></div>';
+  list.forEach(function(x){
+    var share=res.total>0?x.dmg/res.total*100:0;
+    h+='<div class="share" style="--c:'+PAL[x.i%PAL.length]+'"><div class="brow-h"><span><i class="dot"></i>'+esc(skName(x.k,x.i))+'</span><b>'+share.toFixed(1)+'%<small>'+x.casts+'×</small></b></div><div class="bar"><i style="width:'+share.toFixed(1)+'%"></i></div></div>';
+  });
+  if(res.buffs.length){
+    h+='<div class="subh"><span>'+t("d.uptime")+'</span></div>';
+    res.buffs.forEach(function(x){
+      h+='<div class="share" style="--c:'+PAL[(x.i+4)%PAL.length]+'"><div class="brow-h"><span><i class="dot"></i>'+esc(bfName(x.b))+'</span><b>'+x.up.toFixed(0)+'%</b></div><div class="bar"><i style="width:'+x.up.toFixed(1)+'%"></i></div></div>';
+    });
+  }
+  out.innerHTML=h+'<div style="height:10px"></div>';
+}
+
+/* =====================================================================
+   9. Rendering: compare & efficiency
+   ===================================================================== */
+function cmpMods(){
+  var m=S.cmp;
+  return {main:m.main,sub:m.sub,attFlat:m.attFlat,attPct:m.attPct,dmg:m.dmg,boss:m.boss,fdExtra:m.fd?[m.fd]:[],iedExtra:m.ied>0?[m.ied]:[],crit:m.crit,critRate:m.critRate};
+}
+function chg(a,b){ var d=a>0?(b/a-1)*100:0; var cls=d>0.005?"up":d<-0.005?"dn":"eq"; return '<span class="'+cls+'">'+(d>0.005?"+":"")+d.toFixed(2)+"%</span>"; }
+function renderCmp(){
+  var A=compute(S.calc), B=compute(S.calc,cmpMods()), lines=Math.max(0,S.calc.lines);
+  var diff=A.avg>0?(B.avg/A.avg-1)*100:0, cls=diff>0.005?"":diff<-0.005?"dn":"eq";
+  var h='<div class="verdict '+cls+'"><span class="vl">'+t(diff>0.005?"c.up":diff<-0.005?"c.dn":"c.eq")+'</span>'
+   +(cls==="eq"?"":'<span class="vn">'+(diff>0?"+":"")+diff.toFixed(2)+'%</span>')+'</div>';
+  var rows=[["kv.max",A.nMax,B.nMax],["kv.min",A.nMin,B.nMin],["r.avg",A.avg,B.avg],["kv.cmax",A.cMax,B.cMax],["r.perCast",A.avg*lines,B.avg*lines]];
+  h+='<table class="tbl"><thead><tr><th>'+t("c.metric")+'</th><th>'+t("c.a")+'</th><th>'+t("c.b")+'</th><th>'+t("c.chg")+'</th></tr></thead><tbody>'
+   +rows.map(function(r){ return '<tr><td>'+t(r[0])+'</td><td title="'+full(r[1])+'">'+compact(r[1])+'</td><td title="'+full(r[2])+'">'+compact(r[2])+'</td><td>'+chg(r[1],r[2])+'</td></tr>'; }).join("")+'</tbody></table>';
+  $("#cmpOut").innerHTML=h;
+}
+function buildEff(){
+  $("#effList").innerHTML=EFF.map(function(e){
+    return '<div class="erow" data-eff="'+e.id+'"><div class="erow-h"><div class="erow-n"><span>'+esc(t("ef."+e.id))+'</span><span class="badge" hidden>'+t("e.best")+'</span></div>'
+     +'<label class="ctl"><input type="number" inputmode="decimal" step="any" data-e="'+e.id+'" value="'+S.eff[e.id]+'" aria-label="'+esc(t("e.amount")+" "+t("ef."+e.id))+'">'+(e.u?'<em>'+e.u+'</em>':'')+'</label></div>'
+     +'<div class="erow-b"><div class="bar sky"><i style="width:0"></i></div><b class="g">+0.00%</b></div></div>';
+  }).join("");
+}
+function updateEff(){
+  var box=$("#effList"), base=compute(S.calc), gains=[], mx=0;
+  EFF.forEach(function(e){
+    var a=S.eff[e.id], r=compute(S.calc,e.mod(a,S.calc));
+    var g=base.avg>0?(r.avg/base.avg-1)*100:0;
+    gains.push({e:e,g:g}); if(g>mx) mx=g;
+  });
+  gains.forEach(function(x){
+    var row=$('[data-eff="'+x.e.id+'"]',box); if(!row) return;
+    $(".bar i",row).style.width=(mx>0?clamp(x.g/mx*100,0,100):0).toFixed(1)+"%";
+    var gEl=$(".g",row); gEl.textContent=(x.g>=0?"+":"")+x.g.toFixed(2)+"%"; gEl.className="g "+(x.g>0.005?"up":x.g<-0.005?"dn":"eq");
+    $(".badge",row).hidden=!(mx>0&&x.g===mx);
+  });
+  if(!box.contains(document.activeElement)){
+    gains.slice().sort(function(a,b){ return b.g-a.g; }).forEach(function(x){ var row=$('[data-eff="'+x.e.id+'"]',box); if(row) box.appendChild(row); });
+  }
+}
+
+/* =====================================================================
+   10. Guide
+   ===================================================================== */
+var FORMULA=["Stat attack = (Main × 4 + Secondary) × Weapon multiplier","",
+ "Max hit     = Stat attack × Attack ÷ 100","            × (1 + Damage% + Boss%)","            × Final damage","            × Skill damage%",
+ "            × (1 − Defense × (1 − Ignore defense))","Min hit     = Max hit × Mastery","Crit hit    = Hit × (1 + Crit damage)"].join("\n");
+function renderGuide(){
+  var g=GUIDE[S.lang];
+  function li(x){ return "<li>"+esc(x)+"</li>"; }
+  $("#guide").innerHTML='<h2>'+g.quickH+'</h2><ol>'+g.quick.map(li).join("")+'</ol>'
+   +'<h2>'+g.formulaH+'</h2><div class="code">'+esc(FORMULA)+'</div>'
+   +'<h2>'+g.notesH+'</h2><ul>'+g.notes.map(li).join("")+'</ul>'
+   +'<h2>'+g.glossH+'</h2><dl class="gloss">'+g.gloss.map(function(x){ return '<div><dt>'+esc(x[0])+'</dt><dd>'+esc(x[1])+'</dd></div>'; }).join("")+'</dl>'
+   +'<h2>'+g.limitsH+'</h2><ul>'+g.limits.map(li).join("")+'</ul>'
+   +'<div class="note">'+esc(g.note)+'</div>';
+}
+
+/* =====================================================================
+   11. Control flow
+   ===================================================================== */
+var raf=0;
+function schedule(){ if(raf) return; raf=requestAnimationFrame(function(){ raf=0; recalc(); }); }
+function recalc(){
+  renderCalc();
+  if(S.view==="dps") renderDps();
+  if(S.view==="cmp"){ renderCmp(); updateEff(); }
+  updateSums(); save();
+}
+function setView(v,keepScroll){
+  S.view=v;
+  $$(".view").forEach(function(x){ x.classList.toggle("active",x.id==="view-"+v); });
+  $$("[data-view]").forEach(function(b){ var on=b.dataset.view===v; b.classList.toggle("active",on); if(on) b.setAttribute("aria-current","page"); else b.removeAttribute("aria-current"); });
+  $("#pageTitle").textContent=t("title."+v); $("#pageSub").textContent=t("sub."+v);
+  updateFab(); recalc();
+  if(!keepScroll) window.scrollTo(0,0);
+}
+function setLang(l,initial){
+  S.lang=l; document.documentElement.lang=l;
+  $$("#langSeg button").forEach(function(b){ b.setAttribute("aria-pressed",String(b.dataset.lang===l)); });
+  applyI18n(); fillSelects(); updateLabels(); renderLists(); renderSkills(); renderBuffs(); buildEff(); renderGuide();
+  setView(S.view,true);
+}
+function applyJob(id){
+  var j=JOBS.filter(function(x){return x.id===id;})[0]||JOBS[0];
+  S.calc.job=j.id;
+  if(j.weapon){ var w=WEAPONS.filter(function(x){return x.id===j.weapon;})[0]; S.calc.weapon=w.id; S.calc.weaponMult=w.m; }
+  updateLabels(); syncInputs();
+}
+function refreshAll(){ fillSelects(); updateLabels(); syncInputs(); renderLists(); renderSkills(); renderBuffs(); buildEff(); recalc(); }
+function applyState(o){
+  var d=defaults(), s={calc:d.calc,dps:d.dps,cmp:d.cmp,eff:d.eff};
+  merge(s,o);
+  S.calc=s.calc; S.dps=s.dps; S.cmp=s.cmp; S.eff=s.eff;
+  if(!JOBS.some(function(j){return j.id===S.calc.job;})) S.calc.job="custom";
+  if(!WEAPONS.some(function(w){return w.id===S.calc.weapon;})) S.calc.weapon="custom";
+  refreshAll();
+}
+function snapshot(){ return clone({calc:S.calc,dps:S.dps,cmp:S.cmp,eff:S.eff}); }
+
+/* ---------- toast ---------- */
+var toastTimer;
+function hideToast(){ $("#toast").classList.remove("show"); }
+function toast(msg,label,fn){
+  $("#toastMsg").textContent=msg;
+  var b=$("#toastAct");
+  if(label){ b.hidden=false; b.textContent=label; b.onclick=function(){ hideToast(); if(fn) fn(); }; } else { b.hidden=true; b.onclick=null; }
+  $("#toast").classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(hideToast,label?6000:2600);
+}
+
+/* ---------- builds modal ---------- */
+function renderBuilds(){
+  var el=$("#bList");
+  if(!builds.length){ el.innerHTML='<div class="empty" style="padding:18px">'+t("m.empty")+'</div>'; return; }
+  var loc=S.lang==="th"?"th-TH":"en-US";
+  el.innerHTML=builds.map(function(b,i){
+    var d=""; try{ d=new Date(b.ts).toLocaleString(loc,{dateStyle:"medium",timeStyle:"short"}); }catch(e){}
+    return '<div class="bitem"><div class="bn2"><b>'+esc(b.name)+'</b><small>'+esc(d)+'</small></div>'
+     +'<button class="btn sm" data-bload="'+i+'">'+t("m.load")+'</button>'
+     +'<button class="btn sm icon ghost danger" data-bdel="'+i+'" aria-label="'+esc(t("m.del"))+'">'+ic("i-x")+'</button></div>';
+  }).join("");
+}
+function openModal(){ renderBuilds(); $("#mJson").value=JSON.stringify(snapshot(),null,2); $("#modal").classList.add("open"); setTimeout(function(){ $("#mClose").focus(); },30); }
+function closeModal(){ $("#modal").classList.remove("open"); }
+
+/* ---------- fab ---------- */
+var stageVisible=true;
+function updateFab(){ $("#fab").classList.toggle("show",S.view==="calc"&&!stageVisible); }
+
+/* =====================================================================
+   12. Events
+   ===================================================================== */
+function onField(e){
+  var el=e.target, k=el.dataset&&el.dataset.k;
+  if(!k) return;
+  if(k==="calc.job"){ applyJob(el.value); schedule(); return; }
+  if(k==="calc.weapon"){
+    S.calc.weapon=el.value; var w=WEAPONS.filter(function(x){return x.id===el.value;})[0];
+    if(w&&w.m!=null) S.calc.weaponMult=w.m; syncInputs(); schedule(); return;
+  }
+  setPath(S,k,num(el.value));
+  if(k==="calc.weaponMult"){ S.calc.weapon="custom"; $("#selWeapon").value="custom"; }
+  $$('[data-k="'+k+'"]').forEach(function(x){ if(x!==el) x.value=el.value; });
+  schedule();
+}
+function onListInput(e){
+  var el=e.target;
+  if(el.dataset.list){ S.calc[el.dataset.list][+el.dataset.i]=num(el.value); schedule(); }
+  else if(el.dataset.e){ S.eff[el.dataset.e]=num(el.value); schedule(); }
+}
+function itemInput(kind){
+  return function(e){
+    var row=e.target.closest("[data-id]"); if(!row||!e.target.dataset.f) return;
+    var arr=S.dps[kind], it=arr.filter(function(x){return x.id===row.dataset.id;})[0]; if(!it) return;
+    var f=e.target.dataset.f;
+    if(f==="name") it.name=e.target.value;
+    else if(f==="on"){ it.on=e.target.checked; row.classList.toggle("off",!it.on); }
+    else it[f]=num(e.target.value);
+    schedule();
+  };
+}
+function itemClick(kind,render){
+  return function(e){
+    var btn=e.target.closest("[data-act]"); if(!btn) return;
+    var row=btn.closest("[data-id]"), arr=S.dps[kind];
+    var i=arr.map(function(x){return x.id;}).indexOf(row.dataset.id); if(i<0) return;
+    var act=btn.dataset.act;
+    if(act==="del") arr.splice(i,1);
+    else if(act==="up"&&i>0){ var a=arr[i]; arr[i]=arr[i-1]; arr[i-1]=a; }
+    else if(act==="down"&&i<arr.length-1){ var b=arr[i]; arr[i]=arr[i+1]; arr[i+1]=b; }
+    render(); schedule();
+  };
+}
+
+function init(){
+  buildForms();
+  document.addEventListener("input",function(e){ onField(e); onListInput(e); });
+  document.addEventListener("change",function(e){ if(e.target.tagName==="SELECT") onField(e); });
+  document.addEventListener("focusin",function(e){ var el=e.target; if(el.matches&&el.matches("input[type=number]")) setTimeout(function(){ try{ el.select(); }catch(x){} },0); });
+  $("#skillList").addEventListener("input",itemInput("skills"));
+  $("#buffList").addEventListener("input",itemInput("buffs"));
+  $("#skillList").addEventListener("click",itemClick("skills",renderSkills));
+  $("#buffList").addEventListener("click",itemClick("buffs",renderBuffs));
+  $("#btnAddSkill").addEventListener("click",function(){ S.dps.skills.push({id:uid(),nameKey:"",name:"",pct:500,lines:6,cd:0,delay:0.6,on:true}); renderSkills(); schedule(); });
+  $("#btnAddBuff").addEventListener("click",function(){ S.dps.buffs.push({id:uid(),nameKey:"",name:"",dur:30,cd:90,dmg:10,fd:0,crit:0,att:0,on:true}); renderBuffs(); schedule(); });
+  $("#btnClearCmp").addEventListener("click",function(){ CMPF.forEach(function(f){ S.cmp[f[0]]=0; }); syncInputs(); schedule(); });
+
+  document.addEventListener("click",function(e){
+    var el;
+    if((el=e.target.closest("[data-view]"))){ setView(el.dataset.view); return; }
+    if((el=e.target.closest("[data-lang]"))){ setLang(el.dataset.lang); return; }
+    if((el=e.target.closest("[data-target]"))){ S.calc.target=el.dataset.target; schedule(); return; }
+    if((el=e.target.closest("[data-def]"))){ S.calc.defPct=num(el.dataset.def); syncInputs(); schedule(); return; }
+    if((el=e.target.closest("[data-add]"))){ S.calc[el.dataset.add].push(10); renderLists(); schedule(); return; }
+    if((el=e.target.closest("[data-del]"))){ S.calc[el.dataset.del].splice(+el.dataset.i,1); renderLists(); schedule(); return; }
+    if((el=e.target.closest("[data-bload]"))){ var b=builds[+el.dataset.bload]; if(b){ applyState(b.data); closeModal(); toast(t("ok.loaded")); } return; }
+    if((el=e.target.closest("[data-bdel]"))){ builds.splice(+el.dataset.bdel,1); saveBuilds(); renderBuilds(); toast(t("ok.deleted")); return; }
+    if(e.target===$("#modal")) closeModal();
+  });
+  $("#btnBuilds").addEventListener("click",openModal);
+  $("#mClose").addEventListener("click",closeModal);
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") closeModal(); });
+  $("#btnReset").addEventListener("click",function(){ var prev=snapshot(); applyState(null); toast(t("ok.reset"),t("undo"),function(){ applyState(prev); }); });
+  $("#mSave").addEventListener("click",function(){
+    var name=$("#mName").value.trim();
+    if(!name){ toast(t("err.name")); return; }
+    builds.unshift({name:name,ts:Date.now(),data:snapshot()}); if(builds.length>30) builds.length=30;
+    saveBuilds(); $("#mName").value=""; renderBuilds(); toast(t("ok.saved"));
+  });
+  $("#mCopy").addEventListener("click",function(){
+    var ta=$("#mJson"); ta.value=JSON.stringify(snapshot(),null,2);
+    function fallback(){ try{ ta.select(); if(document.execCommand("copy")){ toast(t("ok.copied")); return; } }catch(x){} toast(t("err.copy")); }
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(ta.value).then(function(){ toast(t("ok.copied")); },fallback); } else fallback();
+  });
+  $("#mImport").addEventListener("click",function(){
+    try{ var o=JSON.parse($("#mJson").value); if(!o||typeof o!=="object"||!o.calc) throw new Error("bad"); applyState(o); closeModal(); toast(t("ok.imported")); }
+    catch(x){ toast(t("err.import")); }
+  });
+  $("#fab").addEventListener("click",function(){ $("#stage").scrollIntoView({behavior:"smooth",block:"start"}); });
+  if("IntersectionObserver" in window){
+    new IntersectionObserver(function(es){ stageVisible=es[0].isIntersecting; updateFab(); },{threshold:0.05}).observe($("#stage"));
+  }
+  setLang(S.lang,true);
+  syncInputs();
+}
+init();
+})();
+</script>
+</body>
+</html>
